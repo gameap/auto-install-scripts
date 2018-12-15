@@ -35,19 +35,27 @@ if [ "${os}" = "debian" ]; then
 elif [ "${os}" = "ubuntu" ]; then 
     script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/debian/install-en.sh"
 elif [ "${os}" = "centos" ]; then 
+    echo "Support CentOS is coming soon"
+    echo "Your operating system not supported"
+    exit 1
+else
     echo "Your operating system not supported"
     exit 1
 fi
 
-echo "Script $script"
 echo "Preparation for installation..."
 curl_check
 
+echo
+echo
+echo "Downloading installator for your operating system..."
+curl -sL $script --output /tmp/gameap-install.sh &> /dev/null
+chmod +x /tmp/gameap-install.sh
+
+echo
+echo
 echo "Running..."
 echo
 echo
-
-curl -sL $script --output /tmp/gameap-install.sh &> /dev/null
-chmod +x /tmp/gameap-install.sh
 bash /tmp/gameap-install.sh $@
 rm /tmp/gameap-install.sh
