@@ -313,21 +313,29 @@ main ()
             certificate=$(echo "$result" | tail -n +2)
             echo "$certificate" > /etc/gameap-daemon/certs/client.crt
 
-            sed -i "s/^\ds_id.*$/\ds_id=${dedicated_server_id}/" /etc/gameap-daemon/gameap-daemon.cfg
+            sed -i "s/ds_id.*$/ds_id=${dedicated_server_id}/" /etc/gameap-daemon/gameap-daemon.cfg
 
-            sed -i "s/^\api_host.*$/\api_host=${panelHost##*/}/" /etc/gameap-daemon/gameap-daemon.cfg
-            sed -i "s/^\api_key.*$/\api_key=${api_key}/" /etc/gameap-daemon/gameap-daemon.cfg
+            sed -i "s/api_host.*$/api_host=${panelHost##*/}/" /etc/gameap-daemon/gameap-daemon.cfg
+            sed -i "s/api_key.*$/api_key=${api_key}/" /etc/gameap-daemon/gameap-daemon.cfg
 
-            sed -i "s/^\client_certificate_file.*$/\client_certificate_file=\/etc\/gameap-daemon\/certs\/server\.csr/" /etc/gameap-daemon/gameap-daemon.cfg
+            sed -i "s/client_certificate_file.*$/client_certificate_file=\/etc\/gameap-daemon\/certs\/client\.crt/" /etc/gameap-daemon/gameap-daemon.cfg
         else
             echo "Unknown response from panel"
             echo "$result" > response.log
         fi
     fi
 
-    sed -i "s/^\certificate_chain_file.*$/\certificate_chain_file=\/etc\/gameap-daemon\/certs\/server\.csr/" /etc/gameap-daemon/gameap-daemon.cfg
-    sed -i "s/^\private_key_file.*$/\private_key_file=\/etc\/gameap-daemon\/certs\/server\.key/" /etc/gameap-daemon/gameap-daemon.cfg
-    sed -i "s/^\dh_file.*$/\dh_file=\/etc\/gameap-daemon\/certs\/dh2048\.pem/" /etc/gameap-daemon/gameap-daemon.cfg
+    sed -i "s/certificate_chain_file.*$/certificate_chain_file=\/etc\/gameap-daemon\/certs\/server\.crt/" /etc/gameap-daemon/gameap-daemon.cfg
+    sed -i "s/private_key_file.*$/private_key_file=\/etc\/gameap-daemon\/certs\/server\.key/" /etc/gameap-daemon/gameap-daemon.cfg
+    sed -i "s/dh_file.*$/dh_file=\/etc\/gameap-daemon\/certs\/dh2048\.pem/" /etc/gameap-daemon/gameap-daemon.cfg
+
+    echo "Starting GameAP Daemon..."
+    service gameap-daemon start
+
+    if [ "$?" -ne "0" ]; then
+        echo "GameAP Daemon start failed" >> /dev/stderr
+        exit 1
+    fi
 
     echo "Success"
 }
