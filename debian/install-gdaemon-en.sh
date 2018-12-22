@@ -168,38 +168,46 @@ generate_certs ()
     echo "Generating Root certificates..."
     echo
 
-    openssl genrsa -out rootca.key 2048
-    if [ "$?" -ne "0" ]; then
-        echo "Unable to generate rootca key" >> /dev/stderr
-        exit 1
-    fi
+    if [ -f "rootca.key" ]; then
+        echo "Root certificate exists. Skipping..."
+    else
+        openssl genrsa -out rootca.key 2048
+        if [ "$?" -ne "0" ]; then
+            echo "Unable to generate rootca key" >> /dev/stderr
+            exit 1
+        fi
 
-    openssl req -x509 -new -nodes -key rootca.key -days 3650 -subj '/O=GameAP Daemon Root' -out rootca.crt
-    if [ "$?" -ne "0" ]; then
-        echo "Unable to generate rootca certificate" >> /dev/stderr
-        exit 1
+        openssl req -x509 -new -nodes -key rootca.key -days 3650 -subj '/O=GameAP Daemon Root' -out rootca.crt
+        if [ "$?" -ne "0" ]; then
+            echo "Unable to generate rootca certificate" >> /dev/stderr
+            exit 1
+        fi
     fi
 
     echo
     echo "Generating GameAP Daemon server certificates..."
     echo
 
-    openssl genrsa -out server.key 2048
-    if [ "$?" -ne "0" ]; then
-        echo "Unable to generate server key" >> /dev/stderr
-        exit 1
-    fi
+    if [ -f "server.key" ]; then
+        echo "Server certificate exists. Skipping..."
+    else
+        openssl genrsa -out server.key 2048
+        if [ "$?" -ne "0" ]; then
+            echo "Unable to generate server key" >> /dev/stderr
+            exit 1
+        fi
 
-    openssl req -new -key server.key -subj '/O=GameAP Daemon' -out server.csr
-    if [ "$?" -ne "0" ]; then
-        echo "Unable to generate server certificate" >> /dev/stderr
-        exit 1
-    fi
+        openssl req -new -key server.key -subj '/O=GameAP Daemon' -out server.csr
+        if [ "$?" -ne "0" ]; then
+            echo "Unable to generate server certificate" >> /dev/stderr
+            exit 1
+        fi
 
-    openssl x509 -req -in server.csr -CA rootca.crt -CAkey rootca.key -CAcreateserial -out server.crt -days 3650
-    if [ "$?" -ne "0" ]; then
-        echo "Unable to sign server certificate" >> /dev/stderr
-        exit 1
+        openssl x509 -req -in server.csr -CA rootca.crt -CAkey rootca.key -CAcreateserial -out server.crt -days 3650
+        if [ "$?" -ne "0" ]; then
+            echo "Unable to sign server certificate" >> /dev/stderr
+            exit 1
+        fi
     fi
 
     # echo
@@ -224,10 +232,13 @@ generate_certs ()
     #     exit 1
     # fi
     #
-    openssl dhparam -out dh2048.pem 2048
-    if [ "$?" -ne "0" ]; then
-        echo "Unable to generate DH certificate" >> /dev/stderr
-        exit 1
+
+    if [ ! -f "dh2048.pem" ]; then
+      openssl dhparam -out dh2048.pem 2048
+      if [ "$?" -ne "0" ]; then
+          echo "Unable to generate DH certificate" >> /dev/stderr
+          exit 1
+      fi
     fi
 }
 
@@ -265,31 +276,39 @@ main ()
     if [[ $createToken ]]; then
         get_ds_data
 
+        echo
+        echo "Creating dedicated server on panel..."
+        echo
+
         result=$(curl -qL \
           -F "ip[]=${ds_public_ip}" \
           -F "name=${HOSTNAME}" \
           -F "location=${ds_location}" \
-          -F "workpath=/srv/gameap" \
+          -F "work_path=/srv/gameap" \
           -F "os=linux" \
           -F "gdaemon_host=${ds_public_ip}" \
           -F "gdaemon_port=31717" \
           -F "gdaemon_server_cert=@/etc/gameap-daemon/certs/server.csr" \
-          ${panelHost}/gdaemon/create/${createToken})
+          ${panelHost}/gdaemon/create/${createToken}) &> /dev/null
 
         if [ "$?" -ne "0" ]; then
             echo "Unable to insert dedicated server" >> /dev/stderr
             exit 1
         fi
 
-        result_message=$(echo $result | cut -d' ' -f1)
+        result_message=$(echo "$result" | head -1 | cut -d' ' -f1)
 
         if [ "$result_message" == "Error" ]; then
             echo "Unable to insert dedicated server: " >> /dev/stderr
             echo $(echo $result | cut -d' ' -f2-) >> /dev/stderr
             exit 1
         elif [ "$result_message" == "Success" ]; then
-            dedicated_server_id=$(echo $result | cut -d' ' -f2)
-            api_key=$(echo $result | cut -d' ' -f3)
+            echo
+            echo "Configuring gameap daemon..."
+            echo
+
+            dedicated_server_id=$(echo $result | head -1 | cut -d' ' -f2)
+            api_key=$(echo $result | head -1 | cut -d' ' -f3)
 
             certificate=$(echo "$result" | tail -n +2)
             echo "$certificate" > /etc/gameap-daemon/certs/client.crt
@@ -300,12 +319,17 @@ main ()
             sed -i "s/^\api_key.*$/\api_key=${api_key}/" /etc/gameap-daemon/gameap-daemon.cfg
 
             sed -i "s/^\client_certificate_file.*$/\client_certificate_file=\/etc\/gameap-daemon\/certs\/server\.csr/" /etc/gameap-daemon/gameap-daemon.cfg
+        else
+            echo "Unknown response from panel"
+            echo "$result" > response.log
         fi
     fi
 
     sed -i "s/^\certificate_chain_file.*$/\certificate_chain_file=\/etc\/gameap-daemon\/certs\/server\.csr/" /etc/gameap-daemon/gameap-daemon.cfg
     sed -i "s/^\private_key_file.*$/\private_key_file=\/etc\/gameap-daemon\/certs\/server\.key/" /etc/gameap-daemon/gameap-daemon.cfg
     sed -i "s/^\dh_file.*$/\dh_file=\/etc\/gameap-daemon\/certs\/dh2048\.pem/" /etc/gameap-daemon/gameap-daemon.cfg
+
+    echo "Success"
 }
 
 parse_options $@
