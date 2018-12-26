@@ -288,7 +288,7 @@ main ()
           -F "os=linux" \
           -F "gdaemon_host=${ds_public_ip}" \
           -F "gdaemon_port=31717" \
-          -F "gdaemon_server_cert=@/etc/gameap-daemon/certs/server.csr" \
+          -F "gdaemon_server_cert=@/etc/gameap-daemon/certs/server.crt" \
           ${panelHost}/gdaemon/create/${createToken}) &> /dev/null
 
         if [ "$?" -ne "0" ]; then

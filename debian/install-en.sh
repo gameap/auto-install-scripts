@@ -541,7 +541,7 @@ main ()
 
     install_packages software-properties-common apt-transport-https
 
-    # add_gpg_key "http://packages.gameap.ru/debian/gameap-rep.gpg.key"
+    # add_gpg_key "http://packages.gameap.ru/gameap-rep.gpg.key"
     # echo "deb http://packages.gameap.ru/debian/ ${dist} main" > /etc/apt/sources.list.d/gameap.list
     # update_packages_list
 
