@@ -37,9 +37,9 @@ chmod +x install-gameap.sh
 
 ### With options
 ```
-./install-gameap.sh --path=/var/www/gameap
-    --host=your-gameap.ru
-    --web-server=nginx
+./install-gameap.sh --path=/var/www/gameap \
+    --host=your-gameap.ru \
+    --web-server=nginx \
     --database=mysql
 ```
 
