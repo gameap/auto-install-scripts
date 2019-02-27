@@ -1,7 +1,67 @@
 #!/bin/bash
 
 language=$(echo $LANGUAGE | cut -d_ -f1)
-os=$(cat /etc/os-release | grep ID | cut -d= -f2 | head -1)
+
+detect_os ()
+{
+  if [[ ( -z "${os}" ) && ( -z "${dist}" ) ]]; then
+    if [ -e /etc/lsb-release ]; then
+      . /etc/lsb-release
+
+      if [ "${ID}" = "raspbian" ]; then
+        os=${ID}
+        dist=`cut --delimiter='.' -f1 /etc/debian_version`
+      else
+        os=${DISTRIB_ID}
+        dist=${DISTRIB_CODENAME}
+
+        if [ -z "$dist" ]; then
+          dist=${DISTRIB_RELEASE}
+        fi
+      fi
+
+    elif [ `which lsb_release 2>/dev/null` ]; then
+      dist=`lsb_release -c | cut -f2`
+      os=`lsb_release -i | cut -f2 | awk '{ print tolower($1) }'`
+
+    elif [ -e /etc/debian_version ]; then
+      os=`cat /etc/issue | head -1 | awk '{ print tolower($1) }'`
+      if grep -q '/' /etc/debian_version; then
+        dist=`cut --delimiter='/' -f1 /etc/debian_version`
+      else
+        dist=`cut --delimiter='.' -f1 /etc/debian_version`
+      fi
+
+      if [ "${os}" = "debian" ]; then
+        case $dist in
+            6* ) dist="squeeze" ;;
+            7* ) dist="wheezy" ;;
+            8* ) dist="jessie" ;;
+            9* ) dist="stretch" ;;
+            10* ) dist="buster" ;;
+            11* ) dist="bullseye" ;;
+        esac
+      fi
+
+    else
+      unknown_os
+    fi
+  fi
+
+  if [ -z "$dist" ]; then
+    unknown_os
+  fi
+
+  # remove whitespace from OS and dist name
+  os="${os// /}"
+  dist="${dist// /}"
+
+  # lowercase
+  os=${os,,}
+  dist=${dist,,}
+
+  echo "Detected operating system as $os/$dist."
+}
 
 curl_check ()
 {
@@ -29,6 +89,8 @@ curl_check ()
     fi
   fi
 }
+
+detect_os
 
 if [ "${os}" = "debian" ]; then 
     script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/debian/install-en.sh"
