@@ -1,7 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 shopt -s dotglob
 export DEBIAN_FRONTEND="noninteractive"
+
+trap ctrl_c INT
+
+function ctrl_c() {
+    echo
+    echo "Exiting..."
+    echo
+    exit 130
+}
 
 parse_options () 
 {
@@ -52,7 +61,9 @@ show_help ()
 
 update_packages_list ()
 {
+    echo
     echo -n "Running apt-get update... "
+
     apt-get update &> /dev/null
 
     if [ "$?" -ne "0" ]; then
@@ -61,12 +72,14 @@ update_packages_list ()
     fi
 
     echo "done."
+    echo
 }
 
 install_packages ()
 {
     packages=$@
 
+    echo
     echo -n "Installing ${packages}... "
     apt-get install -y $packages &> /dev/null
 
@@ -75,7 +88,9 @@ install_packages ()
         echo "Package installation aborted." >> /dev/stderr
         exit 1
     fi
+
     echo "done."
+    echo
 }
 
 add_gpg_key ()
@@ -96,7 +111,7 @@ generate_password()
 
 unknown_os ()
 {
-  echo "Unfortunately, your operating system distribution and version are not supported by this script."
+    echo "Unfortunately, your operating system distribution and version are not supported by this script."
 }
 
 detect_os ()
@@ -162,34 +177,37 @@ detect_os ()
 
 gpg_check ()
 {
-  echo "Checking for gpg..."
-  if command -v gpg > /dev/null; then
-    echo "Detected gpg..."
-  else
-    echo "Installing gnupg for GPG verification..."
-    apt-get install -y gnupg
-    if [ "$?" -ne "0" ]; then
-      echo "Unable to install GPG! Your base system has a problem; please check your default OS's package repositories because GPG should work." >> /dev/stderr
-      echo "Repository installation aborted." >> /dev/stderr
-      exit 1
+    echo
+    echo "Checking for gpg..."
+    if command -v gpg > /dev/null; then
+        echo "Detected gpg..."
+    else
+        echo "Installing gnupg for GPG verification..."
+        apt-get install -y gnupg
+        if [ "$?" -ne "0" ]; then
+        echo "Unable to install GPG! Your base system has a problem; please check your default OS's package repositories because GPG should work." >> /dev/stderr
+        echo "Repository installation aborted." >> /dev/stderr
+        exit 1
+        fi
     fi
-  fi
 }
 
 curl_check ()
 {
-  echo "Checking for curl..."
-  if command -v curl > /dev/null; then
-    echo "Detected curl..."
-  else
-    echo "Installing curl..."
-    apt-get install -q -y curl
-    if [ "$?" -ne "0" ]; then
-      echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work." >> /dev/stderr
-      echo "Repository installation aborted." >> /dev/stderr
-      exit 1
+    echo
+    echo "Checking for curl..."
+
+    if command -v curl > /dev/null; then
+        echo "Detected curl..."
+    else
+        echo "Installing curl..."
+        apt-get install -q -y curl
+        if [ "$?" -ne "0" ]; then
+        echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work." >> /dev/stderr
+        echo "Repository installation aborted." >> /dev/stderr
+        exit 1
+        fi
     fi
-  fi
 }
 
 get_package_name ()
@@ -235,8 +253,11 @@ php_packages_check ()
 {
     not_repo=$1
     
+    echo
+    echo
     echo "Checking for PHP..."
 
+    echo
     echo "Checking for PHP 7.3 version available..."
 
     if [ ! -z "$(apt-cache policy php | grep 7.3)" ]; then
@@ -246,6 +267,7 @@ php_packages_check ()
     fi
     echo "PHP 7.3 not available..."
     
+    echo
     echo "Checking for PHP 7.2 version available..."
 
     if [ ! -z "$(apt-cache policy php | grep 7.2)" ]; then
@@ -253,8 +275,9 @@ php_packages_check ()
         php_version="7.2"
         return
     fi
-
     echo "PHP 7.2 not available..."
+
+    echo
     echo "Checking for PHP 7.1 version available..."
 
     if [ ! -z "$(apt-cache policy php | grep 7.1)" ]; then
@@ -262,10 +285,10 @@ php_packages_check ()
         php_version="7.1"
         return
     fi
-
     echo "PHP 7.1 not available..."
 
     if [ -z $not_repo ]; then
+        echo
         echo "Trying to add PHP repo..."
         add_php_repo
     fi
@@ -275,10 +298,12 @@ install_from_github ()
 {
     install_packages git
 
+    echo
     echo "Installing Composer..."
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
     echo "done"
     
+    echo
     echo "Installing NodeJS..."
     curl -sL https://deb.nodesource.com/setup_10.x | bash - &> /dev/null
     install_packages nodejs
@@ -291,6 +316,8 @@ install_from_github ()
     fi
 
     cd $gameap_path
+
+    echo
     echo "Installing Composer packages..."
     echo "This may take a long while..."
     composer install --no-dev --optimize-autoloader &> /dev/null
@@ -302,10 +329,12 @@ install_from_github ()
 
     cp .env.example .env
 
+    echo
     echo "Generating encryption key..."
     php artisan key:generate --force
     echo "done"
 
+    echo
     echo "Installing NodeJS packages..."
     npm install &> /dev/null
     if [ "$?" -ne "0" ]; then
@@ -315,6 +344,7 @@ install_from_github ()
     fi
     echo "done"
 
+    echo
     echo "Building the styles..."
     npm run prod &> /dev/null
     if [ "$?" -ne "0" ]; then
@@ -329,7 +359,9 @@ install_from_official_repo ()
 {
     cd $gameap_path
 
+    echo
     echo "Downloading GameAP archive..."
+
     curl -SfL http://packages.gameap.ru/gameap/latest \
         --output gameap.tar.gz &> /dev/null
     
@@ -366,6 +398,7 @@ mysql_setup ()
     #while true; do read -p "Enter MySQL user password: " database_user_password; done
 
     if command -v mysqld > /dev/null; then
+        echo
         echo "Detected installed mysql..."
 
         echo "MySQL configuring skipped."
@@ -393,11 +426,13 @@ mysql_setup ()
 
         service mysql restart
 
-        mysql -u root -p${database_root_password} -e "use mysql;\
+        mysql -u root -p${database_root_password} -e "USE mysql;\
+            CREATE USER '${database_user_name}'@'%' IDENTIFIED BY '${database_user_password}';\
             GRANT SELECT ON *.* TO '${database_user_name}'@'%';\
-            GRANT ALL PRIVILEGES ON gameap.* TO '${database_user_name}'@'%' IDENTIFIED BY '${database_user_password}';"
+            GRANT ALL PRIVILEGES ON gameap.* TO '${database_user_name}'@'%';
+            FLUSH PRIVILEGES;"
 
-        if [ "$?" -ne "0" ]; then echo "Unable to set database user password. MySQL seting up failed." >> /dev/stderr; exit 1; fi
+        if [ "$?" -ne "0" ]; then echo "Unable to grant privileges. MySQL seting up failed." >> /dev/stderr; exit 1; fi
     fi
 }
 
@@ -429,11 +464,13 @@ nginx_setup ()
 
     sed -i "s/^\(\s*user\s*\).*$/\1www-data\;/" /etc/nginx/nginx.conf
 
-    sed -i "s/^\(\s*server\_name\s*\).*$/\1${gameap_host}\;/" /etc/nginx/conf.d/gameap.conf
-    sed -i "s/^\(\s*root\s*\).*$/\1${gameap_path//\//\\/}\;/" /etc/nginx/conf.d/gameap.conf
-    sed -i "s/^\(\s*root\s*\).*$/\1${gameap_path//\//\\/}\;/" /etc/nginx/conf.d/gameap.conf
+    gameap_public_path="$gameap_path/public"
 
-    sock=unix:/var/run/php/php${php_version}-fpm.sock
+    sed -i "s/^\(\s*server\_name\s*\).*$/\1${gameap_host}\;/" /etc/nginx/conf.d/gameap.conf
+    sed -i "s/^\(\s*root\s*\).*$/\1${gameap_public_path//\//\\/}\;/" /etc/nginx/conf.d/gameap.conf
+    sed -i "s/^\(\s*root\s*\).*$/\1${gameap_public_path//\//\\/}\;/" /etc/nginx/conf.d/gameap.conf
+
+    fastcgi_pass=unix:/var/run/php/php${php_version}-fpm.sock
     sed -i "s/^\(\s*fastcgi_pass\s*\).*$/\1${fastcgi_pass//\//\\/}\;/" /etc/nginx/conf.d/gameap.conf
 
     service nginx start
@@ -449,7 +486,7 @@ apache_setup ()
     fi
 
     curl -SfL https://raw.githubusercontent.com/gameap/auto-install-scripts/master/web-server-configs/apache-no-ssl.conf \
-        --output /etc/apache/sites-available/gameap.conf &> /dev/null
+        --output /etc/apache2/sites-available/gameap.conf &> /dev/null
 
     if [ "$?" -ne "0" ]; then
         echo "Unable to download default Apache config" >> /dev/stderr
@@ -457,13 +494,16 @@ apache_setup ()
         return
     fi
 
-    ln -s /etc/apache/sites-enabled/gameap.conf /etc/apache/sites-available/gameap.conf
+    ln -s /etc/apache2/sites-available/gameap.conf /etc/apache2/sites-enabled/gameap.conf
 
-    sed -i "s/^\(\s*ServerName\s*\).*$/\1${gameap_host}/" ./web-server-configs/apache-no-ssl.conf
-    sed -i "s/^\(\s*DocumentRoot\s*\).*$/\1${path//\//\\/}/" ./web-server-configs/apache-no-ssl.conf
-    sed -i "s/^\(\s*[\<{1}]Directory\s*\).*$/\1${path//\//\\/}>/" ./web-server-configs/apache-no-ssl.conf
+    gameap_public_path="$gameap_path/public"
 
-    /etc/init.d/apache2 start
+    sed -i "s/^\(\s*ServerName\s*\).*$/\1${gameap_host}/" /etc/apache2/sites-available/gameap.conf
+    sed -i "s/^\(\s*DocumentRoot\s*\).*$/\1${gameap_public_path//\//\\/}/" /etc/apache2/sites-available/gameap.conf
+    sed -i "s/^\(\s*[\<{1}]Directory\s*\).*$/\1${gameap_public_path//\//\\/}>/" /etc/apache2/sites-available/gameap.conf
+
+    a2enmod rewrite
+    service apache2 start
 }
 
 ask_user ()
@@ -488,9 +528,9 @@ ask_user ()
         done
     fi
 
-    if [ -z "${gameap_host}" ]; then
+    while [ -z "${gameap_host}" ]; do
         read -p "Enter gameap host (example.com): " gameap_host
-    fi
+    done
 
     if [ -z "${db_selected}" ]; then
         echo
@@ -617,6 +657,9 @@ main ()
 
     chown -R www-data:www-data ${gameap_path}
 
+    echo
+    echo
+    echo
     echo "---------------------------------"
     echo "DONE!"
     echo 
