@@ -472,6 +472,11 @@ ask_user ()
         while true; do
             echo 
             read -p "Enter gameap installation path (Example: /var/www/gameap): " gameap_path
+
+            if [ -z "${gameap_path}" ]; then
+                gameap_path="/var/www/gameap"
+            fi
+            
             if [[ ! -s "${gameap_path}" ]]; then
                     read -p "${gameap_path} not found. Do you wish to make directory? (Y/n): " yn
                     case $yn in
