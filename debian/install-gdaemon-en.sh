@@ -24,7 +24,9 @@ show_help ()
 
 update_packages_list ()
 {
+    echo
     echo -n "Running apt-get update... "
+
     apt-get update &> /dev/null
 
     if [ "$?" -ne "0" ]; then
@@ -33,12 +35,14 @@ update_packages_list ()
     fi
 
     echo "done."
+    echo
 }
 
 install_packages ()
 {
     packages=$@
 
+    echo
     echo -n "Installing ${packages}... "
     apt-get install -y $packages &> /dev/null
 
@@ -47,7 +51,9 @@ install_packages ()
         echo "Package installation aborted." >> /dev/stderr
         exit 1
     fi
+
     echo "done."
+    echo
 }
 
 add_gpg_key ()
@@ -129,34 +135,37 @@ detect_os ()
 
 gpg_check ()
 {
-  echo "Checking for gpg..."
-  if command -v gpg > /dev/null; then
-    echo "Detected gpg..."
-  else
-    echo "Installing gnupg for GPG verification..."
-    apt-get install -y gnupg
-    if [ "$?" -ne "0" ]; then
-      echo "Unable to install GPG! Your base system has a problem; please check your default OS's package repositories because GPG should work." >> /dev/stderr
-      echo "Repository installation aborted." >> /dev/stderr
-      exit 1
+    echo
+    echo "Checking for gpg..."
+    if command -v gpg > /dev/null; then
+        echo "Detected gpg..."
+    else
+        echo "Installing gnupg for GPG verification..."
+        apt-get install -y gnupg
+        if [ "$?" -ne "0" ]; then
+        echo "Unable to install GPG! Your base system has a problem; please check your default OS's package repositories because GPG should work." >> /dev/stderr
+        echo "Repository installation aborted." >> /dev/stderr
+        exit 1
+        fi
     fi
-  fi
 }
 
 curl_check ()
 {
-  echo "Checking for curl..."
-  if command -v curl > /dev/null; then
-    echo "Detected curl..."
-  else
-    echo "Installing curl..."
-    apt-get install -q -y curl
-    if [ "$?" -ne "0" ]; then
-      echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work." >> /dev/stderr
-      echo "Repository installation aborted." >> /dev/stderr
-      exit 1
+    echo
+    echo "Checking for curl..."
+
+    if command -v curl > /dev/null; then
+        echo "Detected curl..."
+    else
+        echo "Installing curl..."
+        apt-get install -q -y curl
+        if [ "$?" -ne "0" ]; then
+        echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work." >> /dev/stderr
+        echo "Repository installation aborted." >> /dev/stderr
+        exit 1
+        fi
     fi
-  fi
 }
 
 generate_certs ()
