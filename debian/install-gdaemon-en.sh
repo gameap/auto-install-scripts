@@ -329,8 +329,14 @@ main ()
 
             sed -i "s/client_certificate_file.*$/client_certificate_file=\/etc\/gameap-daemon\/certs\/client\.crt/" /etc/gameap-daemon/gameap-daemon.cfg
         else
+            echo
+            echo
             echo "Unknown response from panel"
-            echo "$result" > response.log
+            echo "$result" > /tmp/gameap-response-create-ds.log
+            echo "See /tmp/gameap-response-create-ds.log log"
+            echo
+            
+            exit 1
         fi
     fi
 
