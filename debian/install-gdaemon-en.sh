@@ -168,6 +168,40 @@ curl_check ()
     fi
 }
 
+steamcmd_install ()
+{
+    echo
+    echo "Installing steamcmd..."
+
+    if [[ ! -s "/srv/gameap/steamcmd" ]]; then
+        mkdir /srv/gameap/steamcmd
+    else
+        echo "Directory /srv/gameap/steamcmd is exists"
+        echo "Skipping installation SteamCMD"
+        return
+    fi
+
+    install_packages lib32gcc1
+    cd /srv/gameap/steamcmd
+    curl -O https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
+
+    if [ "$?" -ne "0" ]; then
+        echo "Unable to download SteamCMD" >> /dev/stderr
+        echo "Skipping installation SteamCMD" >> /dev/stderr
+        return
+    fi
+
+    tar -xvzf steamcmd_linux.tar.gz
+
+    if [ "$?" -ne "0" ]; then
+        echo "Unable to unpack SteamCMD" >> /dev/stderr
+        echo "Skipping installation SteamCMD" >> /dev/stderr
+        return
+    fi
+
+    rm steamcmd_linux.tar.gz
+}
+
 generate_certs ()
 {
     mkdir -p /etc/gameap-daemon/certs
@@ -278,6 +312,12 @@ main ()
     add_gpg_key "http://packages.gameap.ru/gameap-rep.gpg.key"
     echo "deb http://packages.gameap.ru/${os}/ ${dist} main" > /etc/apt/sources.list.d/gameap.list
     update_packages_list
+
+    if [[ ! -s "/srv/gameap" ]]; then
+        mkdir /srv/gameap
+    fi
+
+    steamcmd_install
 
     install_packages gameap-daemon openssl
     generate_certs
