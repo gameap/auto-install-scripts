@@ -334,6 +334,7 @@ main ()
           -F "name=${HOSTNAME}" \
           -F "location=${ds_location}" \
           -F "work_path=/srv/gameap" \
+          -F "steamcmd_path=/srv/gameap/steamcmd" \
           -F "os=linux" \
           -F "gdaemon_host=${ds_public_ip}" \
           -F "gdaemon_port=31717" \
