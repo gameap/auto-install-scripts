@@ -44,11 +44,11 @@ install_packages ()
     packages=("$@")
 
     echo
-    echo -n "Installing ${packages[@]}... "
-    apt-get install -y "${packages[@]}" &> /dev/null
+    echo -n "Installing ${packages[*]}... "
+    apt-get install -y ${packages[*]} &> /dev/null
 
     if [ "$?" -ne "0" ]; then
-        echo "Unable to install ${packages[@]}." >> /dev/stderr
+        echo "Unable to install ${packages[*]}." >> /dev/stderr
         echo "Package installation aborted." >> /dev/stderr
         exit 1
     fi
