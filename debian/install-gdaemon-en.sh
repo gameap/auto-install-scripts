@@ -317,6 +317,24 @@ main ()
         mkdir /srv/gameap
     fi
 
+    if [ ! $(getent group gameap) ]; then
+		groupadd "gameap"
+
+        if [ "$?" -ne "0" ]; then
+            echo "Unable to add group" >> /dev/stderr
+            exit 1
+        fi
+	fi
+
+    if [ ! $(getent passwd gameap) ]; then
+        useradd -g gameap -d /srv/gameap -s /bin/bash gameap
+
+        if [ "$?" -ne "0" ]; then
+            echo "Unable to add user" >> /dev/stderr
+            exit 1
+        fi
+    fi
+
     steamcmd_install
 
     install_packages gameap-daemon openssl
