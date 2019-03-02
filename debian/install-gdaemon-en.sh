@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -u
 shopt -s dotglob
 export DEBIAN_FRONTEND="noninteractive"
 
@@ -40,14 +41,14 @@ update_packages_list ()
 
 install_packages ()
 {
-    packages=$@
+    packages=("$@")
 
     echo
-    echo -n "Installing ${packages}... "
-    apt-get install -y $packages &> /dev/null
+    echo -n "Installing ${packages[*]}... "
+    apt-get install -y "${packages[*]}" &> /dev/null
 
     if [ "$?" -ne "0" ]; then
-        echo "Unable to install ${packages}." >> /dev/stderr
+        echo "Unable to install ${packages[*]}." >> /dev/stderr
         echo "Package installation aborted." >> /dev/stderr
         exit 1
     fi
@@ -80,7 +81,7 @@ detect_os ()
 
       if [ "${ID}" = "raspbian" ]; then
         os=${ID}
-        dist=`cut --delimiter='.' -f1 /etc/debian_version`
+        dist=$(cut --delimiter='.' -f1 /etc/debian_version)
       else
         os=${DISTRIB_ID}
         dist=${DISTRIB_CODENAME}
@@ -90,16 +91,16 @@ detect_os ()
         fi
       fi
 
-    elif [ `which lsb_release 2>/dev/null` ]; then
-      dist=`lsb_release -c | cut -f2`
-      os=`lsb_release -i | cut -f2 | awk '{ print tolower($1) }'`
+    elif [ -n "$(command -v lsb_release 2>/dev/null)" ]; then
+      dist=$(lsb_release -c | cut -f2)
+      os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
 
     elif [ -e /etc/debian_version ]; then
-      os=`cat /etc/issue | head -1 | awk '{ print tolower($1) }'`
+      os=$(cat /etc/issue | head -1 | awk '{ print tolower($1) }')
       if grep -q '/' /etc/debian_version; then
-        dist=`cut --delimiter='/' -f1 /etc/debian_version`
+        dist=$(cut --delimiter='/' -f1 /etc/debian_version)
       else
-        dist=`cut --delimiter='.' -f1 /etc/debian_version`
+        dist=$(cut --delimiter='.' -f1 /etc/debian_version)
       fi
 
       if [ "${os}" = "debian" ]; then
@@ -182,7 +183,9 @@ steamcmd_install ()
     fi
 
     install_packages lib32gcc1
-    cd /srv/gameap/steamcmd
+
+    cd /srv/gameap/steamcmd || return
+
     curl -O https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
 
     if [ "$?" -ne "0" ]; then
@@ -205,7 +208,7 @@ steamcmd_install ()
 generate_certs ()
 {
     mkdir -p /etc/gameap-daemon/certs
-    cd /etc/gameap-daemon/certs
+    cd /etc/gameap-daemon/certs || exit 1
 
     echo
     echo "Generating Root certificates..."
@@ -292,7 +295,7 @@ get_ds_data ()
       for host in ${hosts[*]}; do
           ds_public_ip=$(curl -qL ${host}) &> /dev/null
 
-          if [ ! -z $ds_public_ip ]; then
+          if [ -n "$ds_public_ip" ]; then
               break
           fi
       done
@@ -317,7 +320,7 @@ main ()
         mkdir /srv/gameap
     fi
 
-    if [ ! $(getent group gameap) ]; then
+    if [ -z "$(getent group gameap)" ]; then
 		groupadd "gameap"
 
         if [ "$?" -ne "0" ]; then
@@ -326,7 +329,7 @@ main ()
         fi
 	fi
 
-    if [ ! $(getent passwd gameap) ]; then
+    if [ -z "$(getent passwd gameap)" ]; then
         useradd -g gameap -d /srv/gameap -s /bin/bash gameap
 
         if [ "$?" -ne "0" ]; then
@@ -340,7 +343,7 @@ main ()
     install_packages gameap-daemon openssl
     generate_certs
 
-    if [[ $createToken ]]; then
+    if [[ -n "$createToken" ]]; then
         get_ds_data
 
         echo
@@ -368,7 +371,7 @@ main ()
 
         if [ "$result_message" == "Error" ]; then
             echo "Unable to insert dedicated server: " >> /dev/stderr
-            echo $(echo $result | cut -d' ' -f2-) >> /dev/stderr
+            echo "$(echo $result | cut -d' ' -f2-)" >> /dev/stderr
             exit 1
         elif [ "$result_message" == "Success" ]; then
             echo
@@ -414,5 +417,5 @@ main ()
     echo "Success"
 }
 
-parse_options $@
+parse_options "$@"
 main
