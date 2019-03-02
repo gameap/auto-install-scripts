@@ -44,11 +44,11 @@ install_packages ()
     packages=("$@")
 
     echo
-    echo -n "Installing ${packages[*]}... "
-    apt-get install -y "${packages[*]}" &> /dev/null
+    echo -n "Installing ${packages[@]}... "
+    apt-get install -y "${packages[@]}" &> /dev/null
 
     if [ "$?" -ne "0" ]; then
-        echo "Unable to install ${packages[*]}." >> /dev/stderr
+        echo "Unable to install ${packages[@]}." >> /dev/stderr
         echo "Package installation aborted." >> /dev/stderr
         exit 1
     fi
@@ -75,35 +75,37 @@ unknown_os ()
 
 detect_os ()
 {
-  if [[ ( -z "${os}" ) && ( -z "${dist}" ) ]]; then
+    os=""
+    dist=""
+
     if [ -e /etc/lsb-release ]; then
-      . /etc/lsb-release
+        . /etc/lsb-release
 
-      if [ "${ID}" = "raspbian" ]; then
-        os=${ID}
-        dist=$(cut --delimiter='.' -f1 /etc/debian_version)
-      else
-        os=${DISTRIB_ID}
-        dist=${DISTRIB_CODENAME}
+        if [ "${ID:-}" = "raspbian" ]; then
+            os=${ID}
+            dist=$(cut --delimiter='.' -f1 /etc/debian_version)
+        else
+            os=${DISTRIB_ID}
+            dist=${DISTRIB_CODENAME}
 
-        if [ -z "$dist" ]; then
-          dist=${DISTRIB_RELEASE}
+            if [ -z "$dist" ]; then
+                dist=${DISTRIB_RELEASE}
+            fi
         fi
-      fi
 
     elif [ -n "$(command -v lsb_release 2>/dev/null)" ]; then
-      dist=$(lsb_release -c | cut -f2)
-      os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
+        dist=$(lsb_release -c | cut -f2)
+        os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
 
     elif [ -e /etc/debian_version ]; then
-      os=$(cat /etc/issue | head -1 | awk '{ print tolower($1) }')
-      if grep -q '/' /etc/debian_version; then
+        os=$(cat /etc/issue | head -1 | awk '{ print tolower($1) }')
+        if grep -q '/' /etc/debian_version; then
         dist=$(cut --delimiter='/' -f1 /etc/debian_version)
-      else
+        else
         dist=$(cut --delimiter='.' -f1 /etc/debian_version)
-      fi
+        fi
 
-      if [ "${os}" = "debian" ]; then
+        if [ "${os}" = "debian" ]; then
         case $dist in
             6* ) dist="squeeze" ;;
             7* ) dist="wheezy" ;;
@@ -112,26 +114,25 @@ detect_os ()
             10* ) dist="buster" ;;
             11* ) dist="bullseye" ;;
         esac
-      fi
+        fi
 
     else
-      unknown_os
+        unknown_os
     fi
-  fi
 
-  if [ -z "$dist" ]; then
-    unknown_os
-  fi
+    if [ -z "$dist" ]; then
+        unknown_os
+    fi
 
-  # remove whitespace from OS and dist name
-  os="${os// /}"
-  dist="${dist// /}"
+    # remove whitespace from OS and dist name
+    os="${os// /}"
+    dist="${dist// /}"
 
-  # lowercase
-  os=${os,,}
-  dist=${dist,,}
+    # lowercase
+    os=${os,,}
+    dist=${dist,,}
 
-  echo "Detected operating system as $os/$dist."
+    echo "Detected operating system as $os/$dist."
 }
 
 gpg_check ()
