@@ -610,6 +610,8 @@ main ()
         php${php_version}-xml \
         php${php_version}-mbstring \
         php${php_version}-bcmath
+        php${php_version}-gmp
+        php${php_version}-intl
     
     if [ ! -z ${from_github} ]; then
         install_from_github

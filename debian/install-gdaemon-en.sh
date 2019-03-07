@@ -242,17 +242,29 @@ generate_certs ()
 
 get_ds_data ()
 {
-      hosts=(ifconfig.co ifconfig.me ipecho.net/plain icanhazip.com)
+    hosts=(ifconfig.co ifconfig.me ipecho.net/plain icanhazip.com)
 
-      for host in ${hosts[*]}; do
-          ds_public_ip=$(curl -qL ${host}) &> /dev/null
+    for host in ${hosts[*]}; do
+        ds_public_ip=$(curl -qL ${host}) &> /dev/null
 
-          if [ -n "$ds_public_ip" ]; then
-              break
-          fi
-      done
+        if [ -n "$ds_public_ip" ]; then
+            break
+        fi
+    done
 
-      ds_location=$(curl ifconfig.co/country) &> /dev/null
+    ds_location=$(curl ifconfig.co/country) &> /dev/null
+
+    ds_ip_list=()
+    hostnames=$(hostname -I)
+
+    for ip in ${hostnames[*]}; do
+        if [ "$ip" == "$ds_public_ip" ]; then
+            continue
+        fi
+
+        ds_ip_list+=$ip
+    done
+
 }
 
 main ()
@@ -302,14 +314,20 @@ main ()
         echo "Creating dedicated server on panel..."
         echo
 
+        curl_ip_fields="-F ip[]=${ds_public_ip} "
+        
+        for ip in ${ds_ip_list[*]}; do
+            curl_ip_fields+="-F ip[]=${ip} "
+        done
+
         result=$(curl -qL \
-          -F "ip[]=${ds_public_ip}" \
+          ${curl_ip_fields} \
           -F "name=${HOSTNAME}" \
           -F "location=${ds_location}" \
           -F "work_path=/srv/gameap" \
           -F "steamcmd_path=/srv/gameap/steamcmd" \
           -F "os=linux" \
-          -F "gdaemon_host=${ds_public_ip}" \
+          -F "gdaemon_host=${ds_ip_list[0]}" \
           -F "gdaemon_port=31717" \
           -F "gdaemon_server_cert=@/etc/gameap-daemon/certs/server.csr" \
           ${panelHost}/gdaemon/create/${createToken}) &> /dev/null
