@@ -353,10 +353,10 @@ main ()
 
             certificates=$(echo "$result" | tail -n +2)
 
-            clientCertificate=$(echo "$certificates" | sed -e '1h;2,$H;$!d;g' -re 's/(.*)\n\n(.*)/\1/g')
+            caCertificate=$(echo "$certificates" | sed -e '1h;2,$H;$!d;g' -re 's/(.*)\n\n(.*)/\1/g')
             serverCertificate=$(echo "$certificates" | sed -e '1h;2,$H;$!d;g' -re 's/(.*)\n\n(.*)/\2/g')
 
-            echo "$clientCertificate" > /etc/gameap-daemon/certs/client.crt
+            echo "$caCertificate" > /etc/gameap-daemon/certs/ca.crt
             echo "$serverCertificate" > /etc/gameap-daemon/certs/server.crt
 
             sed -i "s/ds_id.*$/ds_id=${dedicated_server_id}/" /etc/gameap-daemon/gameap-daemon.cfg
@@ -364,7 +364,7 @@ main ()
             sed -i "s/api_host.*$/api_host=${panelHost##*/}/" /etc/gameap-daemon/gameap-daemon.cfg
             sed -i "s/api_key.*$/api_key=${api_key}/" /etc/gameap-daemon/gameap-daemon.cfg
 
-            sed -i "s/client_certificate_file.*$/client_certificate_file=\/etc\/gameap-daemon\/certs\/client\.crt/" /etc/gameap-daemon/gameap-daemon.cfg
+            sed -i "s/ca_certificate_file.*$/ca_certificate_file=\/etc\/gameap-daemon\/certs\/ca\.crt/" /etc/gameap-daemon/gameap-daemon.cfg
         else
             echo
             echo
