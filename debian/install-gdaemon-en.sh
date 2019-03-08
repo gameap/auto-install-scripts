@@ -262,7 +262,7 @@ get_ds_data ()
             continue
         fi
 
-        ds_ip_list+=$ip
+        ds_ip_list+=($ip)
     done
 
 }
