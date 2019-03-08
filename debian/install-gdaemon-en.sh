@@ -216,15 +216,19 @@ generate_certs ()
     echo
 
     if [ -f "server.key" ]; then
-        echo "Server certificate exists. Skipping..."
+        echo "Server key exists. Skipping..."
     else
         openssl genrsa -out server.key 2048
         if [ "$?" -ne "0" ]; then
             echo "Unable to generate server key" >> /dev/stderr
             exit 1
         fi
+    fi
 
-        openssl req -new -key server.key -subj '/O=GameAP Daemon' -out server.csr
+    if [ -f "server.crt" ]; then
+        echo "Server certificate exists. Skipping..."
+    else
+        openssl req -new -key server.key -subj "/CN=$(hostname)/O=GameAP Daemon" -out server.csr
         if [ "$?" -ne "0" ]; then
             echo "Unable to generate server certificate" >> /dev/stderr
             exit 1
