@@ -221,7 +221,7 @@ get_package_name ()
                 "squeeze" ) package_name="mysql-server" ;;
                 "wheezy" ) package_name="mysql-server" ;;
                 "jessie" ) package_name="mysql-server" ;;
-                "stretch" ) package_name="mysql-server" ;;
+                "stretch" ) package_name="default-mysql-server" ;;
                 "buster" ) package_name="default-mysql-server" ;;
                 "bullseye" ) package_name="default-mysql-server" ;;
                 "sid" ) package_name="default-mysql-server" ;;
