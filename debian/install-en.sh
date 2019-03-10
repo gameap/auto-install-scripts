@@ -709,5 +709,5 @@ main ()
     echo "---------------------------------"
 }
 
-parse_options $@
+parse_options "$@"
 main
