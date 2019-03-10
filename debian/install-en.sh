@@ -223,7 +223,7 @@ mysql_repo_setup ()
         if [ "$?" -ne "0" ]; then
             echo "Unable to add mysql gpg key. " >> /dev/stderr
             exit 1
-        exit 1
+        fi
 
         echo "deb http://repo.mysql.com/apt/debian/ ${dist} main" | tee /etc/apt/sources.list.d/mysql.list
 
