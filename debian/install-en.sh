@@ -395,7 +395,7 @@ install_from_official_repo ()
     echo "done"
 
     echo "Unpacking GameAP archive..."
-    tar -xvf gameap.tar.gz gameap -C ./ &> /dev/null
+    tar -xvf gameap.tar.gz -C ./ &> /dev/null
     if [ "$?" -ne "0" ]; then
         echo "Unable to unpack GameAP. " >> /dev/stderr
         echo "Installation GameAP aborted." >> /dev/stderr
