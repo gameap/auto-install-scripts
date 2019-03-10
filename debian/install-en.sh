@@ -210,6 +210,29 @@ curl_check ()
     fi
 }
 
+mysql_repo_setup ()
+{
+    echo 
+    echo "Setup MySQL repo..."
+
+    if [ "${os}" = "debian" ] && [ "${dist}" = "stretch" ]; then
+        
+        curl http://repo.mysql.com/mysql-apt-config_0.8.9-1_all.deb --output /tmp/mysql-apt-config_0.8.9-1_all.deb
+
+        if [ "$?" -ne "0" ]; then
+            echo "Unable to download mysql apt config package." >> /dev/stderr
+            exit 1
+        fi
+
+        dpkg -i /tmp/mysql-apt-config_0.8.9-1_all.deb
+
+        if [ "$?" -ne "0" ]; then
+            echo "Unable to install mysql apt config package." >> /dev/stderr
+            exit 1
+        fi
+    fi
+}
+
 get_package_name ()
 {
     package=$1
@@ -221,7 +244,7 @@ get_package_name ()
                 "squeeze" ) package_name="mysql-server" ;;
                 "wheezy" ) package_name="mysql-server" ;;
                 "jessie" ) package_name="mysql-server" ;;
-                "stretch" ) package_name="default-mysql-server" ;;
+                "stretch" ) package_name="mysql-community-server" ;;
                 "buster" ) package_name="default-mysql-server" ;;
                 "bullseye" ) package_name="default-mysql-server" ;;
                 "sid" ) package_name="default-mysql-server" ;;
@@ -396,6 +419,8 @@ mysql_setup ()
     #while true; do read -p "Enter MySQL root password: " database_root_password; done
     #while true; do read -p "Enter MySQL user name: " database_user_name; done
     #while true; do read -p "Enter MySQL user password: " database_user_password; done
+
+    mysql_repo_setup
 
     if command -v mysqld > /dev/null; then
         echo
