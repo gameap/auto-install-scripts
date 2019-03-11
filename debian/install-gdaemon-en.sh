@@ -324,8 +324,8 @@ main ()
             curl_ip_fields+="-F ip[]=${ip} "
         done
 
-        if [ -z "$ds_ip_list" ]; then
-           gdaemon_host=$ds_public_ip
+        if [ -z "${ds_ip_list:-}" ]; then
+            gdaemon_host=$ds_public_ip
         else
             gdaemon_host="${ds_ip_list[0]}"
         fi
