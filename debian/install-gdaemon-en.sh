@@ -324,6 +324,12 @@ main ()
             curl_ip_fields+="-F ip[]=${ip} "
         done
 
+        if [ -z "$ds_ip_list" ]; then
+           gdaemon_host=$ds_public_ip
+        else
+            gdaemon_host="${ds_ip_list[0]}"
+        fi
+
         result=$(curl -qL \
           ${curl_ip_fields} \
           -F "name=${HOSTNAME}" \
@@ -331,7 +337,7 @@ main ()
           -F "work_path=/srv/gameap" \
           -F "steamcmd_path=/srv/gameap/steamcmd" \
           -F "os=linux" \
-          -F "gdaemon_host=${ds_ip_list[0]}" \
+          -F "gdaemon_host=${gdaemon_host}" \
           -F "gdaemon_port=31717" \
           -F "gdaemon_server_cert=@/etc/gameap-daemon/certs/server.csr" \
           ${panelHost}/gdaemon/create/${createToken}) &> /dev/null
