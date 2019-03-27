@@ -413,6 +413,14 @@ install_from_official_repo ()
     echo "done"
 }
 
+cron_setup ()
+{
+    crontab -l > gameap_cron
+    echo "* * * * * cd ${gameap_path} && php artisan schedule:run >> /dev/null 2>&1" >> gameap_cron
+    crontab gameap_cron
+    rm gameap_cron
+}
+
 mysql_setup ()
 {
     #while true; do read -p "Enter MySQL root password: " database_root_password; done
@@ -680,6 +688,7 @@ main ()
     fi
 
     chown -R www-data:www-data ${gameap_path}
+    cron_setup
 
     echo
     echo
