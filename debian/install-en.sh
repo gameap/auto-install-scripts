@@ -49,6 +49,9 @@ parse_options ()
             --github)
                 from_github=1
             ;;
+            --upgrade)
+                upgrade=1
+            ;;
         esac
     done
 }
@@ -337,7 +340,7 @@ install_from_github ()
         exit 1
     fi
 
-    cd $gameap_path
+    cd $gameap_path || exit 1
 
     echo
     echo "Installing Composer packages..."
@@ -377,9 +380,9 @@ install_from_github ()
     echo "done"
 }
 
-install_from_official_repo ()
+download_unpack_from_repo ()
 {
-    cd $gameap_path
+    cd $gameap_path || exit 1
 
     echo
     echo "Downloading GameAP archive..."
@@ -402,9 +405,17 @@ install_from_official_repo ()
         exit 1
     fi
     echo "done"
+    
     mv gameap/* ./
     rmdir gameap
     rm gameap.tar.gz
+}
+
+install_from_official_repo ()
+{
+    cd $gameap_path || exit 1
+
+    download_unpack_from_repo
 
     cp .env.example .env
 
@@ -412,6 +423,65 @@ install_from_official_repo ()
     php artisan key:generate --force
     echo "done"
 }
+
+upgrade_migrate ()
+{
+    cd $gameap_path || exit 1
+
+    echo
+    echo "Migrating database..."
+    php artisan migrate
+
+    if [ "$?" -ne "0" ]; then
+        echo "Unable to migrate database" >> /dev/stderr
+        exit 1
+    fi
+    echo "done"
+
+}
+
+upgrade_from_github ()
+{
+    cd $gameap_path || exit 1
+    git pull
+
+    if [ "$?" -ne "0" ]; then
+        echo "Unable to running \"git pull\"" >> /dev/stderr
+        exit 1
+    fi
+
+    echo
+    echo "Updating Composer packages..."
+    echo "This may take a long while..."
+    composer update --no-dev --optimize-autoloader &> /dev/null
+
+    if [ "$?" -ne "0" ]; then
+        echo "Unable to update Composer packages. " >> /dev/stderr
+        exit 1
+    fi
+    echo "done"
+
+    echo
+    echo "Building the styles..."
+    npm run prod &> /dev/null
+    if [ "$?" -ne "0" ]; then
+        echo "Unable to build styles. " >> /dev/stderr
+        echo "Styles building aborted." >> /dev/stderr
+        exit 1
+    fi
+    echo "done"
+
+    upgrade_migrate
+}
+
+upgrade_from_official_repo ()
+{
+    cd $gameap_path || exit 1
+
+    download_unpack_from_repo
+    upgrade_migrate
+}
+
 
 cron_setup ()
 {
@@ -440,7 +510,7 @@ mysql_setup ()
         database_user_name="gameap"
         database_user_password=$(generate_password)
 
-        install_packages $(get_package_name mysql)
+        install_packages "$(get_package_name mysql)"
         unset mysql_package
 
         service mysql start
@@ -448,8 +518,16 @@ mysql_setup ()
         mysql -u root -e 'CREATE DATABASE IF NOT EXISTS `gameap`' &> /dev/null
         if [ "$?" -ne "0" ]; then echo "Unable to create database. MySQL seting up failed." >> /dev/stderr; exit 1; fi
 
+        innodb_version=$(mysql -u root --disable-column-names -s -r -e "SELECT @@GLOBAL.innodb_version;")
+
+        if dpkg --compare-versions "${innodb_version}" "lt" "5.7"; then 
+            password_field="password"
+        else 
+            password_field="authentication_string"
+        fi
+
         mysql -u root -e "use mysql;\
-            update user set password=PASSWORD(\"${database_root_password}\") where User='root';\
+            update user set ${password_field}=PASSWORD(\"${database_root_password}\") where User='root';\
             flush privileges;" &> /dev/null
 
         if [ "$?" -ne "0" ]; then echo "Unable to set database root password. MySQL seting up failed." >> /dev/stderr; exit 1; fi
@@ -558,48 +636,52 @@ ask_user ()
         done
     fi
 
-    while [ -z "${gameap_host}" ]; do
-        read -p "Enter gameap host (example.com): " gameap_host
-    done
+    if [ -z "${upgrade:-}" ]; then
 
-    if [ -z "${db_selected}" ]; then
-        echo
-        echo "Select database to install and configure"
-
-        echo "1) MySQL"
-        echo "2) SQLite"
-        echo "3) None. Do not install a database"
-        echo 
-
-        while true; do
-            read -p "Enter number: " db_selected
-            case $db_selected in
-                1* ) db_selected="mysql"; echo "Okay! Will try install MySQL..."; break;;
-                2* ) db_selected="sqlite"; echo "Okay! Will try install SQLite..."; break;;
-                3* ) db_selected="none"; echo "Okay! ..."; break;;
-                * ) echo "Please answer 1-3.";;
-            esac
+        while [ -z "${gameap_host}" ]; do
+            read -p "Enter gameap host (example.com): " gameap_host
         done
-    fi
 
-    if [ -z "${web_selected}" ]; then
-        echo
-        echo "Select Web-server to install and configure"
+        if [ -z "${db_selected:-}" ]; then
+            echo
+            echo "Select database to install and configure"
 
-        echo "1) Nginx"
-        echo "2) Apache"
-        echo "3) None. Do not install a Web Server"
-        echo 
+            echo "1) MySQL"
+            echo "2) SQLite"
+            echo "3) None. Do not install a database"
+            echo 
 
-        while true; do
-            read -p "Enter number: " web_selected
-            case $web_selected in
-                1* ) web_selected="nginx"; echo "Okay! Will try to install Nginx..."; break;;
-                2* ) web_selected="apache"; echo "Okay! Will try install Apache..."; break;;
-                3* ) web_selected="none"; echo "Okay! ..."; break;;
-                * ) echo "Please answer 1-3.";;
-            esac
-        done
+            while true; do
+                read -p "Enter number: " db_selected
+                case $db_selected in
+                    1* ) db_selected="mysql"; echo "Okay! Will try install MySQL..."; break;;
+                    2* ) db_selected="sqlite"; echo "Okay! Will try install SQLite..."; break;;
+                    3* ) db_selected="none"; echo "Okay! ..."; break;;
+                    * ) echo "Please answer 1-3.";;
+                esac
+            done
+        fi
+
+        if [ -z "${web_selected:-}" ]; then
+            echo
+            echo "Select Web-server to install and configure"
+
+            echo "1) Nginx"
+            echo "2) Apache"
+            echo "3) None. Do not install a Web Server"
+            echo 
+
+            while true; do
+                read -p "Enter number: " web_selected
+                case $web_selected in
+                    1* ) web_selected="nginx"; echo "Okay! Will try to install Nginx..."; break;;
+                    2* ) web_selected="apache"; echo "Okay! Will try install Apache..."; break;;
+                    3* ) web_selected="none"; echo "Okay! ..."; break;;
+                    * ) echo "Please answer 1-3.";;
+                esac
+            done
+        fi
+
     fi
 }
 
@@ -613,6 +695,16 @@ main ()
 
     curl_check
     gpg_check
+
+    if [ -n "${upgrade:-}" ]; then
+        if [ -n "${from_github:-}" ]; then
+            upgrade_from_github
+        else
+            upgrade_from_official_repo
+        fi
+
+        exit 0
+    fi
 
     install_packages software-properties-common apt-transport-https
 
@@ -643,7 +735,7 @@ main ()
         php${php_version}-gmp \
         php${php_version}-intl
     
-    if [ ! -z ${from_github} ]; then
+    if [ -n "${from_github:-}" ]; then
         install_from_github
     else
         install_from_official_repo
