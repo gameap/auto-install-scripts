@@ -406,8 +406,8 @@ download_unpack_from_repo ()
     fi
     echo "done"
     
-    mv gameap/* ./
-    rmdir gameap
+    cp -r gameap/* ./
+    rm -r gameap
     rm gameap.tar.gz
 }
 
