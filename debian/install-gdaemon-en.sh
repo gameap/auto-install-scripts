@@ -183,7 +183,7 @@ steamcmd_install ()
         return
     fi
 
-    install_packages lib32gcc1
+    install_packages lib32gcc1 lib32stdc++6
 
     cd /srv/gameap/steamcmd || return
 
