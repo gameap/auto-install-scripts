@@ -666,7 +666,7 @@ ask_user ()
             echo
             echo "Select Web-server to install and configure"
 
-            echo "1) Nginx"
+            echo "1) Nginx (Recommended)"
             echo "2) Apache"
             echo "3) None. Do not install a Web Server"
             echo 
