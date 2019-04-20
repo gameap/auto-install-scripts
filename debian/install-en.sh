@@ -418,9 +418,20 @@ install_from_official_repo ()
     download_unpack_from_repo
 
     cp .env.example .env
+}
 
+generate_encription_key ()
+{
+    cd $gameap_path || exit 1
+    
     echo "Generating encryption key..."
     php artisan key:generate --force
+    
+    if [ "$?" -ne "0" ]; then
+        echo "Unable to generate encription key" >> /dev/stderr
+        exit 1
+    fi
+
     echo "done"
 }
 
@@ -760,6 +771,8 @@ main ()
             sed -i "s/^\(DB\_DATABASE\s*=\s*\).*$/\1${database_name//\//\\/}/" .env
         ;;
     esac
+
+    generate_encription_key
 
     if [ "${db_selected}" != "none" ]; then
         echo "Migrating database..."
