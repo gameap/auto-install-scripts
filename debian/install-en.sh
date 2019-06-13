@@ -302,16 +302,6 @@ php_packages_check ()
     fi
     echo "PHP 7.2 not available..."
 
-    echo
-    echo "Checking for PHP 7.1 version available..."
-
-    if [ ! -z "$(apt-cache policy php | grep 7.1)" ]; then
-        echo "PHP 7.1 available"
-        php_version="7.1"
-        return
-    fi
-    echo "PHP 7.1 not available..."
-
     if [ -z $not_repo ]; then
         echo
         echo "Trying to add PHP repo..."
