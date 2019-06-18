@@ -268,7 +268,10 @@ get_ds_data ()
 
         ds_ip_list+=($ip)
     done
+}
 
+function version { 
+    echo "$@" | gawk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; 
 }
 
 main ()
@@ -283,22 +286,24 @@ main ()
     add_gpg_key "http://packages.gameap.ru/gameap-rep.gpg.key"
     echo "deb http://packages.gameap.ru/${os}/ ${dist} main" > /etc/apt/sources.list.d/gameap.list
     update_packages_list
+    
+    work_dir="/srv/gameap"
 
-    if [[ ! -s "/srv/gameap" ]]; then
-        mkdir /srv/gameap
+    if [[ ! -s $work_dir ]]; then
+        mkdir -p $work_dir
     fi
 
     if [ -z "$(getent group gameap)" ]; then
-		groupadd "gameap"
+        groupadd "gameap"
 
         if [ "$?" -ne "0" ]; then
             echo "Unable to add group" >> /dev/stderr
             exit 1
         fi
-	fi
+    fi
 
     if [ -z "$(getent passwd gameap)" ]; then
-        useradd -g gameap -d /srv/gameap -s /bin/bash gameap
+        useradd -g gameap -d $work_dir -s /bin/bash gameap
 
         if [ "$?" -ne "0" ]; then
             echo "Unable to add user" >> /dev/stderr
@@ -329,17 +334,38 @@ main ()
         else
             gdaemon_host="${ds_ip_list[0]}"
         fi
+        
+        # OpenVZ compatible
+        curl_script_fields=""
+        if [ "$(version $(uname -r))" -le "$(version "2.6.32")" ]; then
+            echo 
+            echo "Old kernel detected..."
+            echo "Using screen package instead gameap-starter..."
+            echo 
+            
+            install_packages screen
+            curl -o $work_dir/server.sh  https://raw.githubusercontent.com/et-nik/gameap-legacy/v1.2-stable/bin/Linux/server.sh
+            chmod +x $work_dir/server.sh
+
+            curl_script_fields+="-F script_start=./server.sh -t start -d {dir} -n {uuid} -u {user} -c {command} "
+            curl_script_fields+="-F script_stop=./server.sh -t stop -d {dir} -n {uuid} -u {user} "
+            curl_script_fields+="-F script_restart=./server.sh -t restart -d {dir} -n {uuid} -u {user} -c {command} "
+            curl_script_fields+="-F script_status=./server.sh -t status -d {dir} -n {uuid} -u {user} "
+            curl_script_fields+="-F script_get_console=./server.sh -t get_console -d {dir} -n {uuid} "
+            curl_script_fields+="-F script_send_command=./server.sh -t send_command -d {dir} -n {uuid} -c {command} "
+        fi
 
         result=$(curl -qL \
           ${curl_ip_fields} \
           -F "name=${HOSTNAME}" \
           -F "location=${ds_location}" \
-          -F "work_path=/srv/gameap" \
-          -F "steamcmd_path=/srv/gameap/steamcmd" \
+          -F "work_path=${work_dir}" \
+          -F "steamcmd_path=${work_dir}/steamcmd" \
           -F "os=linux" \
           -F "gdaemon_host=${gdaemon_host}" \
           -F "gdaemon_port=31717" \
           -F "gdaemon_server_cert=@/etc/gameap-daemon/certs/server.csr" \
+          ${curl_script_fields} \
           ${panelHost}/gdaemon/create/${createToken}) &> /dev/null
 
         if [ "$?" -ne "0" ]; then
