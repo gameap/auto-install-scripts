@@ -271,7 +271,7 @@ get_ds_data ()
 }
 
 function version { 
-    echo "$@" | gawk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; 
+    echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; 
 }
 
 main ()
