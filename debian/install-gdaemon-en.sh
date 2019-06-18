@@ -347,12 +347,12 @@ main ()
             curl -o $work_dir/server.sh  https://raw.githubusercontent.com/et-nik/gameap-legacy/v1.2-stable/bin/Linux/server.sh
             chmod +x $work_dir/server.sh
 
-            curl_script_fields+="-F script_start=./server.sh -t start -d {dir} -n {uuid} -u {user} -c {command} "
-            curl_script_fields+="-F script_stop=./server.sh -t stop -d {dir} -n {uuid} -u {user} "
-            curl_script_fields+="-F script_restart=./server.sh -t restart -d {dir} -n {uuid} -u {user} -c {command} "
-            curl_script_fields+="-F script_status=./server.sh -t status -d {dir} -n {uuid} -u {user} "
-            curl_script_fields+="-F script_get_console=./server.sh -t get_console -d {dir} -n {uuid} "
-            curl_script_fields+="-F script_send_command=./server.sh -t send_command -d {dir} -n {uuid} -c {command} "
+            curl_script_fields+="-F script_start=\"./server.sh -t start -d {dir} -n {uuid} -u {user} -c {command}\" "
+            curl_script_fields+="-F script_stop=\"./server.sh -t stop -d {dir} -n {uuid} -u {user}\" "
+            curl_script_fields+="-F script_restart=\"./server.sh -t restart -d {dir} -n {uuid} -u {user} -c {command}\" "
+            curl_script_fields+="-F script_status=\"./server.sh -t status -d {dir} -n {uuid} -u {user}\" "
+            curl_script_fields+="-F script_get_console=\"./server.sh -t get_console -d {dir} -n {uuid}\" "
+            curl_script_fields+="-F script_send_command=\"./server.sh -t send_command -d {dir} -n {uuid} -c {command}\" "
         fi
 
         result=$(curl -qL \
