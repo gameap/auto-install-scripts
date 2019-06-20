@@ -266,6 +266,10 @@ get_ds_data ()
             continue
         fi
 
+        if [[ "$ip" == "127."* ]]; then
+            continue
+        fi
+
         ds_ip_list+=($ip)
     done
 }
