@@ -506,10 +506,18 @@ mysql_setup ()
         echo "Please configure MySQL manually."
 
         mysql_manual=1
+
+        echo "Enter DB username: "
+        read -r database_user_name
+        echo "Enter DB password: "
+        read -r database_user_password
+        echo "Enter DB table name: "
+        read -r database_table_name
     else
         database_root_password=$(generate_password)
         database_user_name="gameap"
         database_user_password=$(generate_password)
+        database_table_name="gameap"
 
         install_packages "$(get_package_name mysql)"
         unset mysql_package
@@ -747,7 +755,7 @@ main ()
             mysql_setup
 
             sed -i "s/^\(DB\_CONNECTION\s*=\s*\).*$/\1mysql/" .env
-            sed -i "s/^\(DB\_DATABASE\s*=\s*\).*$/\1gameap/" .env
+            sed -i "s/^\(DB\_DATABASE\s*=\s*\).*$/\1${database_table_name}/" .env
             sed -i "s/^\(DB\_USERNAME\s*=\s*\).*$/\1${database_user_name}/" .env
             sed -i "s/^\(DB\_PASSWORD\s*=\s*\).*$/\1${database_user_password}/" .env
         ;;
