@@ -733,6 +733,7 @@ main ()
 
     install_packages php${php_version}-common \
         php${php_version}-common \
+        php${php_version}-gd \
         php${php_version}-cli \
         php${php_version}-fpm \
         php${php_version}-pdo \
