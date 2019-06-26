@@ -4,13 +4,14 @@ GameAP full auto installation script
 
 | Operating System       | Version          | Supported | Notes
 |-----------------------|-------------------|-----------|----------------------------|
-| Debian                | sid               | ✘         | Not implemented
-|                       | 10 / buster       | ✘         | Not implemented
+| Debian                | sid               | ✔         | Unstable distributive. Latest manual test: 26.07.2019
+|                       | 10 / buster       | ✔         | 
 |                       | 9 / stretch       | ✔         | Additional PHP repo is needed
 |                       | 8 / jessie        | ✔         | Additional PHP repo is needed
 |                       | 7 / wheezy        | ✘         | No repositories with PHP >= 7.1
 |                       | 6 / squeeze       | ✘         | No repositories with PHP >= 7.1
-| Ubuntu                | 18.10 / cosmic    | ✘         | Not implemented
+| Ubuntu                | 19.04 / disco     | ✔         | 
+|                       | 18.10 / cosmic    | ✔         | 
 |                       | 18.04 / bionic    | ✔         |
 |                       | 16.04 / xenial    | ✔         |
 |                       | 14.04 / trusty    | ✔         | Additional PHP repo is needed
