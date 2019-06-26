@@ -615,7 +615,9 @@ apache_setup ()
     ln -s /etc/apache2/sites-available/gameap.conf /etc/apache2/sites-enabled/gameap.conf
 
     gameap_public_path="$gameap_path/public"
+    gameap_ip=$(getent hosts ${gameap_host} | awk '{ print $1 }')
 
+    sed -i "s/^\(\s*<VirtualHost\s*\).*\(:[0-9]*>\)$/\1${gameap_ip}\2/" /etc/apache2/sites-available/gameap.conf
     sed -i "s/^\(\s*ServerName\s*\).*$/\1${gameap_host}/" /etc/apache2/sites-available/gameap.conf
     sed -i "s/^\(\s*DocumentRoot\s*\).*$/\1${gameap_public_path//\//\\/}/" /etc/apache2/sites-available/gameap.conf
     sed -i "s/^\(\s*[\<{1}]Directory\s*\).*$/\1${gameap_public_path//\//\\/}>/" /etc/apache2/sites-available/gameap.conf
