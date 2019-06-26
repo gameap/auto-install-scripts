@@ -2,6 +2,7 @@
 
 set -u
 shopt -s dotglob
+[ "${DEBUG:-}" == 'true' ] && set -x
 export DEBIAN_FRONTEND="noninteractive"
 
 parse_options ()

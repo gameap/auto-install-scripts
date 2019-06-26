@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 shopt -s dotglob
+[ "${DEBUG:-}" == 'true' ] && set -x
 export DEBIAN_FRONTEND="noninteractive"
 
 trap ctrl_c INT
