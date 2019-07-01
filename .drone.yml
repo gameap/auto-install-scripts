@@ -1,0 +1,102 @@
+kind: pipeline
+name: debian-nginx-mysql
+
+steps:
+  - name: build
+    image: debian:stretch
+    environment:
+      WEB_SERVER: nginx
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
+name: debian-apache-mysql
+
+steps:
+  - name: build
+    image: debian:stretch
+    environment:
+      WEB_SERVER: apache
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
+name: debian-nginx-sqlite
+
+steps:
+  - name: build
+    image: debian:stretch
+    environment:
+      WEB_SERVER: nginx
+      DATABASE: sqlite
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
+name: debian-apache-sqlite
+
+steps:
+  - name: build
+    image: debian:stretch
+    environment:
+      WEB_SERVER: apache
+      DATABASE: sqlite
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
+name: ubuntu-nginx-mysql
+
+steps:
+  - name: build
+    image: ubuntu:bionic
+    environment:
+      WEB_SERVER: nginx
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
+name: ubuntu-apache-mysql
+
+steps:
+  - name: build
+    image: ubuntu:bionic
+    environment:
+      WEB_SERVER: apache
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
+name: ubuntu-nginx-sqlite
+
+steps:
+  - name: build
+    image: ubuntu:bionic
+    environment:
+      WEB_SERVER: nginx
+      DATABASE: sqlite
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
+name: ubuntu-apache-sqlite
+
+steps:
+  - name: build
+    image: ubuntu:bionic
+    environment:
+      WEB_SERVER: apache
+      DATABASE: sqlite
+    commands:
+      - ./run_test.sh

@@ -1,5 +1,7 @@
 GameAP full auto installation script
 
+[![Build Status](https://drone.gameap.ru/api/badges/gameap/auto-install-scripts/status.svg)](https://drone.gameap.ru/gameap/auto-install-scripts)
+
 ## Supported OS
 
 | Operating System       | Version          | Supported | Notes
