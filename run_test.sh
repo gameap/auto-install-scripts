@@ -22,4 +22,4 @@ echo
 echo "Checking GameAP Daemon installation"
 
 echo "Illuminate\Support\Facades\Cache::put('gdaemonAutoSetupToken', 'fake', 300);" | /var/www/gameap/artisan tinker
-export createToken=fake; export panelHost=http://test.gameap; ./debian/install-gdaemon-en.sh | bash --
+export createToken=fake; export panelHost=http://test.gameap; ./debian/install-gdaemon-en.sh
