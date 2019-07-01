@@ -797,6 +797,11 @@ main ()
     chown -R www-data:www-data ${gameap_path}
     cron_setup
 
+    # Change admin password
+    cd $gameap_path
+    admin_password=$(generate_password)
+    php artisan user:change-password "admin" "${admin_password}"
+
     echo
     echo
     echo
@@ -818,7 +823,7 @@ main ()
     echo 
     echo "Administrator credentials"
     echo "Login: admin"
-    echo "Password: fpwPOuZD"
+    echo "Password: ${admin_password}"
     echo
     echo "Host: http://${gameap_host}"
     echo
