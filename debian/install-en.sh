@@ -797,16 +797,21 @@ main ()
     chown -R www-data:www-data ${gameap_path}
     cron_setup
 
+    # Change admin password
+    cd $gameap_path
+    admin_password=$(generate_password)
+    php artisan user:change-password "admin" "${admin_password}"
+
     echo
     echo
     echo
     echo "---------------------------------"
     echo "DONE!"
-    echo 
+    echo
     echo "GameAP file path: ${gameap_path}"
     echo
 
-    if [ "${db_selected}" = "sqlite" ]; then 
+    if [ "${db_selected}" = "sqlite" ]; then
         echo "Database: ${database_name}"
     else
         if [ ! -z "$database_root_password" ]; then echo "Database root password: ${database_root_password}"; fi
@@ -815,10 +820,10 @@ main ()
         if [ ! -z "$database_user_password" ]; then echo "Database user password: ${database_user_password}"; fi
     fi
 
-    echo 
+    echo
     echo "Administrator credentials"
     echo "Login: admin"
-    echo "Password: fpwPOuZD"
+    echo "Password: ${admin_password}"
     echo
     echo "Host: http://${gameap_host}"
     echo
