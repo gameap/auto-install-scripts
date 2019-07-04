@@ -116,6 +116,7 @@ generate_password()
 unknown_os ()
 {
     echo "Unfortunately, your operating system distribution and version are not supported by this script."
+    exit 2
 }
 
 detect_os ()
@@ -732,7 +733,6 @@ main ()
     fi
 
     install_packages php${php_version}-common \
-        php${php_version}-common \
         php${php_version}-gd \
         php${php_version}-cli \
         php${php_version}-fpm \
