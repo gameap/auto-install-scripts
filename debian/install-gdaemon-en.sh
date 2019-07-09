@@ -361,8 +361,10 @@ main ()
             curl_script_fields+=("-F script_send_command=./server.sh -t send_command -d {dir} -n {uuid} -c \"{command}\" ")
         fi
 
+        curl_fields=(${curl_script_fields[@]:-} ${curl_ip_fields[@]})
+
         result=$(curl -qL \
-          "${curl_ip_fields[@]}" \
+          "${curl_fields[@]}" \
           -F "name=${HOSTNAME}" \
           -F "location=${ds_location}" \
           -F "work_path=${work_dir}" \
@@ -371,7 +373,6 @@ main ()
           -F "gdaemon_host=${gdaemon_host}" \
           -F "gdaemon_port=31717" \
           -F "gdaemon_server_cert=@/etc/gameap-daemon/certs/server.csr" \
-          "${curl_script_fields[@]}" \
           ${panelHost}/gdaemon/create/${createToken}) &> /dev/null
 
         if [ "$?" -ne "0" ]; then

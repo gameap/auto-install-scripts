@@ -1,4 +1,17 @@
 kind: pipeline
+name: buster-nginx-mysql
+
+steps:
+  - name: build
+    image: debian:buster
+    environment:
+      WEB_SERVER: nginx
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
 name: debian-nginx-mysql
 
 steps:
@@ -97,6 +110,19 @@ steps:
     image: ubuntu:bionic
     environment:
       WEB_SERVER: apache
+      DATABASE: sqlite
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
+name: jessie-nginx-sqlite
+
+steps:
+  - name: build
+    image: debian:jessie
+    environment:
+      WEB_SERVER: nginx
       DATABASE: sqlite
     commands:
       - ./run_test.sh
