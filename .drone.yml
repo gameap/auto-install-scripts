@@ -139,6 +139,6 @@ steps:
       DATABASE: mysql
     commands:
       - mv /bin/uname /bin/original_uname
-      - echo 'Linux vps5785664248 2.6.32-042stab127.2 \#1 SMP Thu Jan 4 16:41:44 MSK 2018 x86_64 GNU/Linux' > /bin/uname
+      - echo "echo 'Linux vps5785664248 2.6.32-042stab127.2 \#1 SMP Thu Jan 4 16:41:44 MSK 2018 x86_64 GNU/Linux'" > /bin/uname
       - chmod +x /bin/uname
       - ./run_test.sh
