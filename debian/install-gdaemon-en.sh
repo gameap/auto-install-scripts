@@ -399,12 +399,14 @@ main ()
             echo "$caCertificate" > /etc/gameap-daemon/certs/ca.crt
             echo "$serverCertificate" > /etc/gameap-daemon/certs/server.crt
 
-            sed -i "s/ds_id.*$/ds_id=${dedicated_server_id}/" /etc/gameap-daemon/gameap-daemon.cfg
+            if ! sed -i "s/ds_id.*$/ds_id=${dedicated_server_id}/" /etc/gameap-daemon/gameap-daemon.cfg \
+                || ! sed -i "s/api_host.*$/api_host=${panelHost##*/}/" /etc/gameap-daemon/gameap-daemon.cfg \
+                || ! sed -i "s/api_key.*$/api_key=${api_key}/" /etc/gameap-daemon/gameap-daemon.cfg \
+                || ! sed -i "s/ca_certificate_file.*$/ca_certificate_file=\/etc\/gameap-daemon\/certs\/ca\.crt/" /etc/gameap-daemon/gameap-daemon.cfg; then
 
-            sed -i "s/api_host.*$/api_host=${panelHost##*/}/" /etc/gameap-daemon/gameap-daemon.cfg
-            sed -i "s/api_key.*$/api_key=${api_key}/" /etc/gameap-daemon/gameap-daemon.cfg
-
-            sed -i "s/ca_certificate_file.*$/ca_certificate_file=\/etc\/gameap-daemon\/certs\/ca\.crt/" /etc/gameap-daemon/gameap-daemon.cfg
+                echo "Unable to edit GDaemon configuration (/etc/gameap-daemon/gameap-daemon.cfg)"
+                exit 1
+            fi
         else
             echo
             echo
