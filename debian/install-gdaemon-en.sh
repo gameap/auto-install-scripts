@@ -318,7 +318,7 @@ main ()
 
     steamcmd_install
 
-    install_packages gameap-daemon openssl unzip
+    install_packages gameap-daemon openssl unzip xz-utils
     generate_certs
 
     if [[ -n "$createToken" ]]; then
