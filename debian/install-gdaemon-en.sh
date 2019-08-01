@@ -322,6 +322,7 @@ main ()
     generate_certs
 
     if [[ -n "$createToken" ]]; then
+        declare -a ds_ip_list
         get_ds_data
 
         echo
