@@ -87,6 +87,18 @@ steps:
       DATABASE: mysql
     commands:
       - ./run_test.sh
+---
+kind: pipeline
+name: xenial-nginx-mysql
+
+steps:
+  - name: build
+    image: ubuntu:xenial
+    environment:
+      WEB_SERVER: apache
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
 
 ---
 kind: pipeline
