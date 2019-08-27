@@ -9,12 +9,6 @@ steps:
       DATABASE: mysql
     commands:
       - ./run_test.sh
-      
-matrix:
-  DEBIAN_VERSION:
-    - jessie
-    - stretch
-    - buster
 
 ---
 kind: pipeline
