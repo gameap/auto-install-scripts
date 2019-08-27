@@ -3,12 +3,18 @@ name: buster-nginx-mysql
 
 steps:
   - name: build
-    image: debian:buster
+    image: debian:${DEBIAN_VERSION}
     environment:
       WEB_SERVER: nginx
       DATABASE: mysql
     commands:
       - ./run_test.sh
+      
+matrix:
+  DEBIAN_VERSION:
+    - jessie
+    - stretch
+    - buster
 
 ---
 kind: pipeline
