@@ -7,7 +7,7 @@ local Pipeline(dist, dist_version, web_server, database) = {
       environment: {
         WEB_SERVER: web_server,
         DATABASE: database,
-      }
+      },
       commands: [
         "./run_test.sh",
       ]
