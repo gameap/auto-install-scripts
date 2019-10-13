@@ -336,10 +336,20 @@ main ()
             curl_fields+=("-F ip[]=${ip} ")
         done
 
-        if [ -z "${ds_ip_list:-}" ]; then
+        if [[ -z "${ds_ip_list:-}" ]]; then
             gdaemon_host=$ds_public_ip
         else
             gdaemon_host="${ds_ip_list[0]}"
+
+            if [[ "${#ds_ip_list[@]}" -gt 1 ]]; then
+                for ip in ${ds_ip_list[*]}; do
+                    # IPv4 is a priority. Check for IPv4.
+                    if [[ $ip =~ ^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$ ]]; then
+                        gdaemon_host="${ip}"
+                        break
+                    fi
+                done
+            fi
         fi
         
         # OpenVZ compatible
