@@ -2,7 +2,7 @@
 
 set -u
 shopt -s dotglob
-[ "${DEBUG:-}" == 'true' ] && set -x
+[[ "${DEBUG:-}" == 'true' ]] && set -x
 export DEBIAN_FRONTEND="noninteractive"
 
 parse_options ()
@@ -31,7 +31,7 @@ update_packages_list ()
 
     apt-get update &> /dev/null
 
-    if [ "$?" -ne "0" ]; then
+    if [[ "$?" -ne "0" ]]; then
         echo "Unable to update apt" >> /dev/stderr
         exit 1
     fi
@@ -48,7 +48,7 @@ install_packages ()
     echo -n "Installing ${packages[*]}... "
     apt-get install -y ${packages[*]} &> /dev/null
 
-    if [ "$?" -ne "0" ]; then
+    if [[ "$?" -ne "0" ]]; then
         echo "Unable to install ${packages[*]}." >> /dev/stderr
         echo "Package installation aborted." >> /dev/stderr
         exit 1
@@ -63,7 +63,7 @@ add_gpg_key ()
     gpg_key_url=$1
     curl -SfL "${gpg_key_url}" 2> /dev/null | apt-key add - &>/dev/null
 
-    if [ "$?" -ne "0" ]; then
+    if [[ "$?" -ne "0" ]]; then
       echo "Unable to add GPG key!" >> /dev/stderr
       exit 1
     fi
@@ -79,26 +79,26 @@ detect_os ()
     os=""
     dist=""
 
-    if [ -e /etc/lsb-release ]; then
+    if [[ -e /etc/lsb-release ]]; then
         . /etc/lsb-release
 
-        if [ "${ID:-}" = "raspbian" ]; then
+        if [[ "${ID:-}" = "raspbian" ]]; then
             os=${ID}
             dist=$(cut --delimiter='.' -f1 /etc/debian_version)
         else
             os=${DISTRIB_ID}
             dist=${DISTRIB_CODENAME}
 
-            if [ -z "$dist" ]; then
+            if [[ -z "$dist" ]]; then
                 dist=${DISTRIB_RELEASE}
             fi
         fi
 
-    elif [ -n "$(command -v lsb_release 2>/dev/null)" ]; then
+    elif [[ -n "$(command -v lsb_release 2>/dev/null)" ]]; then
         dist=$(lsb_release -c | cut -f2)
         os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
 
-    elif [ -e /etc/debian_version ]; then
+    elif [[ -e /etc/debian_version ]]; then
         os=$(cat /etc/issue | head -1 | awk '{ print tolower($1) }')
         if grep -q '/' /etc/debian_version; then
         dist=$(cut --delimiter='/' -f1 /etc/debian_version)
@@ -106,7 +106,7 @@ detect_os ()
         dist=$(cut --delimiter='.' -f1 /etc/debian_version)
         fi
 
-        if [ "${os}" = "debian" ]; then
+        if [[ "${os}" = "debian" ]]; then
         case $dist in
             6* ) dist="squeeze" ;;
             7* ) dist="wheezy" ;;
@@ -119,10 +119,12 @@ detect_os ()
 
     else
         unknown_os
+        exit 1
     fi
 
-    if [ -z "$dist" ]; then
+    if [[ -z "$dist" ]]; then
         unknown_os
+        exit 1
     fi
 
     # remove whitespace from OS and dist name
@@ -145,7 +147,7 @@ gpg_check ()
     else
         echo "Installing gnupg for GPG verification..."
         apt-get install -y gnupg
-        if [ "$?" -ne "0" ]; then
+        if [[ "$?" -ne "0" ]]; then
         echo "Unable to install GPG! Your base system has a problem; please check your default OS's package repositories because GPG should work." >> /dev/stderr
         echo "Repository installation aborted." >> /dev/stderr
         exit 1
@@ -163,7 +165,7 @@ curl_check ()
     else
         echo "Installing curl..."
         apt-get install -q -y curl
-        if [ "$?" -ne "0" ]; then
+        if [[ "$?" -ne "0" ]]; then
         echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work." >> /dev/stderr
         echo "Repository installation aborted." >> /dev/stderr
         exit 1
@@ -190,7 +192,7 @@ steamcmd_install ()
 
     curl -O https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
 
-    if [ "$?" -ne "0" ]; then
+    if [[ "$?" -ne "0" ]]; then
         echo "Unable to download SteamCMD" >> /dev/stderr
         echo "Skipping installation SteamCMD" >> /dev/stderr
         return
@@ -198,7 +200,7 @@ steamcmd_install ()
 
     tar -xvzf steamcmd_linux.tar.gz
 
-    if [ "$?" -ne "0" ]; then
+    if [[ "$?" -ne "0" ]]; then
         echo "Unable to unpack SteamCMD" >> /dev/stderr
         echo "Skipping installation SteamCMD" >> /dev/stderr
         return
@@ -216,29 +218,29 @@ generate_certs ()
     echo "Generating GameAP Daemon server certificates..."
     echo
 
-    if [ -f "server.key" ]; then
+    if [[ -f "server.key" ]]; then
         echo "Server key exists. Skipping..."
     else
         openssl genrsa -out server.key 2048
-        if [ "$?" -ne "0" ]; then
+        if [[ "$?" -ne "0" ]]; then
             echo "Unable to generate server key" >> /dev/stderr
             exit 1
         fi
     fi
 
-    if [ -f "server.crt" ]; then
+    if [[ -f "server.crt" ]]; then
         echo "Server certificate exists. Skipping..."
     else
         openssl req -new -key server.key -subj "/CN=$(hostname)/O=GameAP Daemon" -out server.csr
-        if [ "$?" -ne "0" ]; then
+        if [[ "$?" -ne "0" ]]; then
             echo "Unable to generate server certificate" >> /dev/stderr
             exit 1
         fi
     fi
 
-    if [ ! -f "dh2048.pem" ]; then
+    if [[ ! -f "dh2048.pem" ]]; then
       openssl dhparam -out dh2048.pem 2048
-      if [ "$?" -ne "0" ]; then
+      if [[ "$?" -ne "0" ]]; then
           echo "Unable to generate DH certificate" >> /dev/stderr
           exit 1
       fi
@@ -252,7 +254,7 @@ get_ds_data ()
     for host in ${hosts[*]}; do
         ds_public_ip=$(curl -qL ${host}) &> /dev/null
 
-        if [ -n "$ds_public_ip" ]; then
+        if [[ -n "$ds_public_ip" ]]; then
             break
         fi
     done
@@ -263,7 +265,7 @@ get_ds_data ()
     hostnames=$(hostname -I)
 
     for ip in ${hostnames[*]}; do
-        if [ "$ip" == "$ds_public_ip" ]; then
+        if [[ "$ip" == "$ds_public_ip" ]]; then
             continue
         fi
 
@@ -298,19 +300,19 @@ main ()
         mkdir -p $work_dir
     fi
 
-    if [ -z "$(getent group gameap)" ]; then
+    if [[ -z "$(getent group gameap)" ]]; then
         groupadd "gameap"
 
-        if [ "$?" -ne "0" ]; then
+        if [[ "$?" -ne "0" ]]; then
             echo "Unable to add group" >> /dev/stderr
             exit 1
         fi
     fi
 
-    if [ -z "$(getent passwd gameap)" ]; then
+    if [[ -z "$(getent passwd gameap)" ]]; then
         useradd -g gameap -d $work_dir -s /bin/bash gameap
 
-        if [ "$?" -ne "0" ]; then
+        if [[ "$?" -ne "0" ]]; then
             echo "Unable to add user" >> /dev/stderr
             exit 1
         fi
@@ -344,7 +346,7 @@ main ()
             if [[ "${#ds_ip_list[@]}" -gt 1 ]]; then
                 for ip in ${ds_ip_list[*]}; do
                     # IPv4 is a priority. Check for IPv4.
-                    if [[ $ip =~ ^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$ ]]; then
+                    if [[ ${ip} =~ ^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$ ]]; then
                         gdaemon_host="${ip}"
                         break
                     fi
@@ -353,7 +355,7 @@ main ()
         fi
         
         # OpenVZ compatible
-        if [ "$(version $(uname -r))" -le "$(version "2.6.32")" ]; then
+        if [[ "$(version $(uname -r))" -le "$(version "2.6.32")" ]]; then
             echo 
             echo "Old kernel detected..."
             echo "Using screen package instead gameap-starter..."
@@ -383,18 +385,18 @@ main ()
           -F "gdaemon_server_cert=@/etc/gameap-daemon/certs/server.csr" \
           ${panelHost}/gdaemon/create/${createToken}) &> /dev/null
 
-        if [ "$?" -ne "0" ]; then
+        if [[ "$?" -ne "0" ]]; then
             echo "Unable to insert dedicated server" >> /dev/stderr
             exit 1
         fi
 
         result_message=$(echo "$result" | head -1 | cut -d' ' -f1)
 
-        if [ "$result_message" == "Error" ]; then
+        if [[ "$result_message" == "Error" ]]; then
             echo "Unable to insert dedicated server: " >> /dev/stderr
             echo "$(echo $result | cut -d' ' -f2-)" >> /dev/stderr
             exit 1
-        elif [ "$result_message" == "Success" ]; then
+        elif [[ "$result_message" == "Success" ]]; then
             echo
             echo "Configuring gameap daemon..."
             echo
@@ -437,7 +439,7 @@ main ()
     echo "Starting GameAP Daemon..."
     service gameap-daemon start
 
-    if [ "$?" -ne "0" ]; then
+    if [[ "$?" -ne "0" ]]; then
         echo "GameAP Daemon start failed" >> /dev/stderr
         exit 1
     fi
