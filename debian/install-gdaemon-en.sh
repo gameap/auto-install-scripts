@@ -261,7 +261,6 @@ get_ds_data ()
 
     ds_location=$(curl ifconfig.co/country) &> /dev/null
 
-    ds_ip_list=()
     hostnames=$(hostname -I)
 
     for ip in ${hostnames[*]}; do
@@ -333,14 +332,14 @@ main ()
     
         declare -a curl_fields
         curl_fields+=("-F ip[]=${ds_public_ip} ")
-        
-        for ip in ${ds_ip_list[*]}; do
-            curl_fields+=("-F ip[]=${ip} ")
-        done
 
         if [[ -z "${ds_ip_list:-}" ]]; then
             gdaemon_host=$ds_public_ip
         else
+            for ip in ${ds_ip_list[*]}; do
+                curl_fields+=("-F ip[]=${ip} ")
+            done
+
             gdaemon_host="${ds_ip_list[0]}"
 
             if [[ "${#ds_ip_list[@]}" -gt 1 ]]; then
