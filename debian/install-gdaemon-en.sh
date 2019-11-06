@@ -186,7 +186,9 @@ steamcmd_install ()
         return
     fi
 
-    install_packages lib32gcc1 lib32stdc++6
+    if [[ $(getconf LONG_BIT) == "64" ]]; then
+        install_packages lib32gcc1 lib32stdc++6
+    fi
 
     cd /srv/gameap/steamcmd || return
 
