@@ -119,7 +119,6 @@ if [[ "${os}" == "debian" ]] \
     script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/debian/install-gdaemon-en.sh"
 elif [[ "${os}" == "centos" ]]; then
     script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/centos/install-gdaemon-en.sh"
-    exit 1
 else
     echo "Your operating system not supported" >> /dev/stderr
     exit 1
