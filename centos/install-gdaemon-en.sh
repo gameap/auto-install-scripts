@@ -103,24 +103,23 @@ detect_os ()
         else
             dist=$(cut --delimiter='.' -f1 /etc/debian_version)
         fi
-
-        if [[ "${os}" = "debian" ]]; then
-          case $dist in
-              6* ) dist="squeeze" ;;
-              7* ) dist="wheezy" ;;
-              8* ) dist="jessie" ;;
-              9* ) dist="stretch" ;;
-              10* ) dist="buster" ;;
-              11* ) dist="bullseye" ;;
-          esac
-        fi
-
     else
         unknown_os
     fi
 
     if [[ -z "$dist" ]]; then
         unknown_os
+    fi
+
+    if [[ "${os}" = "debian" ]]; then
+        case $dist in
+            6* ) dist="squeeze" ;;
+            7* ) dist="wheezy" ;;
+            8* ) dist="jessie" ;;
+            9* ) dist="stretch" ;;
+            10* ) dist="buster" ;;
+            11* ) dist="bullseye" ;;
+        esac
     fi
 
     # remove whitespace from OS and dist name
@@ -133,6 +132,7 @@ detect_os ()
 
     echo "Detected operating system as $os/$dist."
 }
+
 gpg_check ()
 {
     echo
