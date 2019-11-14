@@ -115,9 +115,7 @@ if [ "${os}" = "debian" ]; then
 elif [ "${os}" = "ubuntu" ]; then 
     script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/debian/install-en.sh"
 elif [ "${os}" = "centos" ]; then 
-    echo "Support CentOS is coming soon"
-    echo "Your operating system not supported"
-    exit 1
+    script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/centos/install-en.sh"
 else
     echo "Your operating system not supported"
     exit 1

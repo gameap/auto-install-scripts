@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
 shopt -s dotglob
-[ "${DEBUG:-}" == 'true' ] && set -x
-export DEBIAN_FRONTEND="noninteractive"
+[[ "${DEBUG:-}" == 'true' ]] && set -x
 
 trap ctrl_c INT
 
@@ -29,7 +28,7 @@ parse_options ()
                 if [[ ! -s "${gameap_path}" ]]; then
                     mkdir -p ${gameap_path}
 
-                    if [ "$?" -ne "0" ]; then
+                    if [[ "$?" -ne "0" ]]; then
                         echo "Unable to make directory: ${gameap_path}." >> /dev/stderr
                         exit 1
                     fi
@@ -63,31 +62,15 @@ show_help ()
     echo "GameAP web auto installator"
 }
 
-update_packages_list ()
-{
-    echo
-    echo -n "Running apt-get update... "
-
-    apt-get update &> /dev/null
-
-    if [ "$?" -ne "0" ]; then
-        echo "Unable to update apt" >> /dev/stderr
-        exit 1
-    fi
-
-    echo "done."
-    echo
-}
-
 install_packages ()
 {
     packages=$@
 
     echo
     echo -n "Installing ${packages}... "
-    apt-get install -y $packages &> /dev/null
+    yum install -y $packages &> /dev/null
 
-    if [ "$?" -ne "0" ]; then
+    if [[ "$?" -ne "0" ]]; then
         echo "Unable to install ${packages}." >> /dev/stderr
         echo "Package installation aborted." >> /dev/stderr
         exit 1
@@ -100,9 +83,9 @@ install_packages ()
 add_gpg_key ()
 {
     gpg_key_url=$1
-    curl -SfL "${gpg_key_url}" 2> /dev/null | apt-key add - &>/dev/null
+    rpm --import "${gpg_key_url}" 2> /dev/null
 
-    if [ "$?" -ne "0" ]; then
+    if [[ "$?" -ne "0" ]]; then
       echo "Unable to add GPG key!" >> /dev/stderr
       exit 1
     fi
@@ -134,7 +117,7 @@ detect_os ()
             os=${DISTRIB_ID}
             dist=${DISTRIB_CODENAME}
 
-            if [ -z "$dist" ]; then
+            if [[ -z "$dist" ]]; then
                 dist=${DISTRIB_RELEASE}
             fi
         fi
@@ -154,7 +137,6 @@ detect_os ()
     elif [[ -n "$(command -v lsb_release 2>/dev/null)" ]]; then
         dist=$(lsb_release -c | cut -f2)
         os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
-
     elif [[ -e /etc/debian_version ]]; then
         os=$(cat /etc/issue | head -1 | awk '{ print tolower($1) }')
         if grep -q '/' /etc/debian_version; then
@@ -189,7 +171,7 @@ detect_os ()
     os=${os,,}
     dist=${dist,,}
 
-    echo "Detected operating system as $os/$dist."
+    echo "Detected operating system as ${os}/${dist}."
 }
 
 gpg_check ()
@@ -200,11 +182,12 @@ gpg_check ()
         echo "Detected gpg..."
     else
         echo "Installing gnupg for GPG verification..."
-        apt-get install -y gnupg
-        if [ "$?" -ne "0" ]; then
-        echo "Unable to install GPG! Your base system has a problem; please check your default OS's package repositories because GPG should work." >> /dev/stderr
-        echo "Repository installation aborted." >> /dev/stderr
-        exit 1
+        yum install -y gnupg
+
+        if [[ "$?" -ne "0" ]]; then
+            echo "Unable to install GPG! Your base system has a problem; please check your default OS's package repositories because GPG should work." >> /dev/stderr
+            echo "Repository installation aborted." >> /dev/stderr
+            exit 1
         fi
     fi
 }
@@ -218,34 +201,36 @@ curl_check ()
         echo "Detected curl..."
     else
         echo "Installing curl..."
-        apt-get install -q -y curl
+        yum install -q -y curl
+
         if [[ "$?" -ne "0" ]]; then
-        echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work." >> /dev/stderr
-        echo "Repository installation aborted." >> /dev/stderr
-        exit 1
+            echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work." >> /dev/stderr
+            echo "Repository installation aborted." >> /dev/stderr
+            exit 1
         fi
     fi
 }
 
 mysql_repo_setup ()
 {
-    echo 
+    echo
     echo "Setup MySQL repo..."
 
-    if [[ "${os}" = "debian" ]] && [[ "${dist}" = "stretch" ]]; then
+    if [[ "${os}" == "centos" ]] && [[ "${dist}" == "6" ]]; then
 
-        install_packages dirmngr
-        apt-key adv --keyserver keys.gnupg.net --recv-keys 5072E1F5
-
-        if [[ "$?" -ne "0" ]]; then
-            echo "Unable to add mysql gpg key. " >> /dev/stderr
-            exit 1
+        if [[ $(uname -p) == "x86_64" ]]; then
+            mariadb_repo_arch="amd64"
+        else
+            mariadb_repo_arch="x86"
         fi
 
-        echo "deb http://repo.mysql.com/apt/debian/ ${dist} main" | tee /etc/apt/sources.list.d/mysql.list
-
-        gpg --recv-keys 5072E1F5y
-        update_packages_list
+        cat <<EOT >> /etc/yum.repos.d/mariadb.repo
+[mariadb]
+name = MariaDB
+baseurl = http://yum.mariadb.org/10.1/centos${dist}-${mariadb_repo_arch}
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck=1
+EOT
     fi
 }
 
@@ -254,22 +239,11 @@ get_package_name ()
     package=$1
 
     if [[ "${package}" = "mysql" ]]; then
-        if [[ "${os}" = "debian" ]]; then
-            package_name="mysql-server"
-            case $dist in
-                "squeeze" ) package_name="mysql-server" ;;
-                "wheezy" ) package_name="mysql-server" ;;
-                "jessie" ) package_name="mysql-server" ;;
-                "stretch" ) package_name="default-mysql-server" ;;
-                "buster" ) package_name="default-mysql-server" ;;
-                "bullseye" ) package_name="default-mysql-server" ;;
-                "sid" ) package_name="default-mysql-server" ;;
-            esac
-        elif [[ "${os}" = "ubuntu" ]]; then
-            package_name="mysql-server"
-        else
-            package_name="mysql-server"
-        fi
+        case ${dist} in
+            "6" ) package_name="MariaDB-server" ;;
+            "7" ) package_name="mariadb-server" ;;
+            "8" ) package_name="mysql-server" ;;
+        esac
     fi
 
     echo $package_name
@@ -277,14 +251,9 @@ get_package_name ()
 
 add_php_repo ()
 {
-    if [[ "${os}" = "debian" ]]; then
-        add_gpg_key "https://packages.sury.org/php/apt.gpg"
-        echo "deb https://packages.sury.org/php/ ${dist} main" | tee /etc/apt/sources.list.d/php.list
-    elif [[ "${os}" = "ubuntu" ]]; then
-        LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
-    fi
-
-    update_packages_list
+    yum -y install epel-release &> /dev/null
+    yum -y install http://rpms.remirepo.net/enterprise/remi-release-${dist}.rpm &> /dev/null
+    yum -y install yum-utils &> /dev/null
     php_packages_check 1
 }
 
@@ -299,9 +268,18 @@ php_packages_check ()
     echo
     echo "Checking for PHP 7.3 version available..."
 
-    if [[ ! -z "$(apt-cache policy php | grep 7.3)" ]]; then
+    if yum --showduplicates list php73 &> /dev/null; then
         echo "PHP 7.3 available"
-        php_version="7.3"
+        php_version="73"
+
+        if [[ ${dist} == "8" ]]; then
+            yum module disable php:remi-7.2 -y &> /dev/null
+            yum module enable php:remi-7.3 -y &> /dev/null
+        else
+            yum-config-manager --disable remi-php54 &> /dev/null
+            yum-config-manager --enable remi-php${php_version} &> /dev/null
+        fi
+
         return
     fi
     echo "PHP 7.3 not available..."
@@ -309,14 +287,20 @@ php_packages_check ()
     echo
     echo "Checking for PHP 7.2 version available..."
 
-    if [[ ! -z "$(apt-cache policy php | grep 7.2)" ]]; then
+    if yum --showduplicates list php72 &> /dev/null; then
         echo "PHP 7.2 available"
-        php_version="7.2"
+        php_version="72"
+
+        if [[ ${dist} != "8" ]]; then
+            yum-config-manager --disable remi-php54 &> /dev/null
+            yum-config-manager --enable remi-php${php_version} &> /dev/null
+        fi
+
         return
     fi
     echo "PHP 7.2 not available..."
 
-    if [[ -z $not_repo ]]; then
+    if [[ -z ${not_repo} ]]; then
         echo
         echo "Trying to add PHP repo..."
         add_php_repo
@@ -334,7 +318,7 @@ install_from_github ()
     
     echo
     echo "Installing NodeJS..."
-    curl -sL https://deb.nodesource.com/setup_10.x | bash - &> /dev/null
+    curl -sL https://rpm.nodesource.com/setup_10.x | sudo -E bash - &> /dev/null
     install_packages nodejs
     echo "done"
 
@@ -349,14 +333,13 @@ install_from_github ()
     echo
     echo "Installing Composer packages..."
     echo "This may take a long while..."
-    composer install --no-dev --optimize-autoloader &> /dev/null
-    if [[ "$?" -ne "0" ]]; then
+    if ! composer install &> /dev/null; then
         echo "Unable to install Composer packages. " >> /dev/stderr
         exit 1
     fi
     echo "done"
 
-    cp .env.example .env
+    cp .example .env
 
     echo
     echo "Generating encryption key..."
@@ -506,6 +489,15 @@ cron_setup ()
     rm gameap_cron
 }
 
+mysql_service_name ()
+{
+    case ${dist} in
+        "6" ) echo "mysql" ;;
+        "7" ) echo "mariadb" ;;
+        "8" ) echo "mysqld" ;;
+    esac
+}
+
 mysql_setup ()
 {
     #while true; do read -p "Enter MySQL root password: " database_root_password; done
@@ -528,6 +520,8 @@ mysql_setup ()
         echo "Enter DB table name: "
         read -r database_table_name
     else
+        mysql_repo_setup
+
         database_root_password=$(generate_password)
         database_user_name="gameap"
         database_user_password=$(generate_password)
@@ -536,31 +530,31 @@ mysql_setup ()
         install_packages "$(get_package_name mysql)"
         unset mysql_package
 
-        service mysql start
+        service $(mysql_service_name) start
 
-        mysql -u root -e 'CREATE DATABASE IF NOT EXISTS `gameap`' &> /dev/null
+        /usr/bin/mysqladmin -u root password "${database_root_password}"
+
+        mysql -u root -p${database_root_password} -e 'CREATE DATABASE IF NOT EXISTS `gameap`' &> /dev/null
         if [[ "$?" -ne "0" ]]; then echo "Unable to create database. MySQL seting up failed." >> /dev/stderr; exit 1; fi
 
-        innodb_version=$(mysql -u root --disable-column-names -s -r -e "SELECT @@GLOBAL.innodb_version;")
+        innodb_version=$(mysql -u root -p${database_root_password} --disable-column-names -s -r -e "SELECT @@GLOBAL.innodb_version;")
 
-        if dpkg --compare-versions "${innodb_version}" "lt" "5.7"; then 
+        # Compare versions
+        if [[  "${innodb_version}" = "`echo -e "${innodb_version}\n5.7" | sort -V | head -n1`" ]]; then
+            # < 5.7
             password_field="password"
         else 
             password_field="authentication_string"
         fi
 
-        mysql -u root -e "use mysql;\
-            update user set ${password_field}=PASSWORD(\"${database_root_password}\") where User='root';\
-            flush privileges;" &> /dev/null
-
         if [[ "$?" -ne "0" ]]; then echo "Unable to set database root password. MySQL seting up failed." >> /dev/stderr; exit 1; fi
 
-        service mysql restart
+        service $(mysql_service_name) restart
 
         mysql -u root -p${database_root_password} -e "USE mysql;\
-            CREATE USER '${database_user_name}'@'%' IDENTIFIED BY '${database_user_password}';\
-            GRANT SELECT ON *.* TO '${database_user_name}'@'%';\
-            GRANT ALL PRIVILEGES ON gameap.* TO '${database_user_name}'@'%';
+            CREATE USER '${database_user_name}'@'localhost' IDENTIFIED BY '${database_user_password}';\
+            GRANT SELECT ON *.* TO '${database_user_name}'@'localhost';\
+            GRANT ALL PRIVILEGES ON gameap.* TO '${database_user_name}'@'localhost';
             FLUSH PRIVILEGES;"
 
         if [[ "$?" -ne "0" ]]; then echo "Unable to grant privileges. MySQL seting up failed." >> /dev/stderr; exit 1; fi
@@ -572,15 +566,22 @@ nginx_setup ()
     if command -v nginx > /dev/null; then
         echo "Detected installed nginx..."
     else
-        add_gpg_key "https://nginx.org/keys/nginx_signing.key"
-        
-        if [[ "${os}" = "debian" ]]; then
-            echo "deb http://nginx.org/packages/debian/ ${dist} nginx" | tee /etc/apt/sources.list.d/nginx.list
-        elif [[ "${os}" = "ubuntu" ]]; then
-            echo "deb http://nginx.org/packages/ubuntu/ ${dist} nginx" | tee /etc/apt/sources.list.d/nginx.list
-        fi
+        cat <<EOT >> /etc/yum.repos.d/nginx.repo
+[nginx-stable]
+name=nginx stable repo
+baseurl=http://nginx.org/packages/${os}/${dist}/$(uname -p)/
+gpgcheck=1
+enabled=1
+gpgkey=https://nginx.org/keys/nginx_signing.key
 
-        update_packages_list
+[nginx-mainline]
+name=nginx mainline repo
+baseurl=http://nginx.org/packages/mainline/${os}/${dist}/$(uname -p)/
+gpgcheck=1
+enabled=0
+gpgkey=https://nginx.org/keys/nginx_signing.key
+EOT
+
         install_packages nginx
     fi
 
@@ -601,23 +602,23 @@ nginx_setup ()
     sed -i "s/^\(\s*root\s*\).*$/\1${gameap_public_path//\//\\/}\;/" /etc/nginx/conf.d/gameap.conf
     sed -i "s/^\(\s*root\s*\).*$/\1${gameap_public_path//\//\\/}\;/" /etc/nginx/conf.d/gameap.conf
 
-    fastcgi_pass=unix:/var/run/php/php${php_version}-fpm.sock
+    fastcgi_pass=unix:/var/run/php-fpm/php-fpm.sock
     sed -i "s/^\(\s*fastcgi_pass\s*\).*$/\1${fastcgi_pass//\//\\/}\;/" /etc/nginx/conf.d/gameap.conf
 
     service nginx start
-    service php${php_version}-fpm start
+    service php-fpm start
 }
 
 apache_setup ()
 {
-    if command -v apache2 > /dev/null; then
+    if command -v httpd > /dev/null; then
         echo "Detected installed apache..."
     else
-        install_packages apache2 libapache2-mod-php${php_version}
+        install_packages httpd
     fi
 
     curl -SfL https://raw.githubusercontent.com/gameap/auto-install-scripts/master/web-server-configs/apache-no-ssl.conf \
-        --output /etc/apache2/sites-available/gameap.conf &> /dev/null
+        --output /etc/httpd/conf.d/gameap.conf &> /dev/null
 
     if [[ "$?" -ne "0" ]]; then
         echo "Unable to download default Apache config" >> /dev/stderr
@@ -625,18 +626,28 @@ apache_setup ()
         return
     fi
 
-    ln -s /etc/apache2/sites-available/gameap.conf /etc/apache2/sites-enabled/gameap.conf
+    sed -i "s/^User .*$/User www-data/" /etc/httpd/conf/httpd.conf
+    sed -i "s/^Group .*$/Group www-data/" /etc/httpd/conf/httpd.conf
 
     gameap_public_path="$gameap_path/public"
     gameap_ip=$(getent hosts ${gameap_host} | awk '{ print $1 }')
 
-    sed -i "s/^\(\s*<VirtualHost\s*\).*\(:[0-9]*>\)$/\1${gameap_ip}\2/" /etc/apache2/sites-available/gameap.conf
-    sed -i "s/^\(\s*ServerName\s*\).*$/\1${gameap_host}/" /etc/apache2/sites-available/gameap.conf
-    sed -i "s/^\(\s*DocumentRoot\s*\).*$/\1${gameap_public_path//\//\\/}/" /etc/apache2/sites-available/gameap.conf
-    sed -i "s/^\(\s*[\<{1}]Directory\s*\).*$/\1${gameap_public_path//\//\\/}>/" /etc/apache2/sites-available/gameap.conf
+    sed -i "s/^\(\s*<VirtualHost\s*\).*\(:[0-9]*>\)$/\1${gameap_ip}\2/" /etc/httpd/conf.d/gameap.conf
+    sed -i "s/^\(\s*ServerName\s*\).*$/\1${gameap_host}/" /etc/httpd/conf.d/gameap.conf
+    sed -i "s/^\(\s*DocumentRoot\s*\).*$/\1${gameap_public_path//\//\\/}/" /etc/httpd/conf.d/gameap.conf
+    sed -i "s/^\(\s*[\<{1}]Directory\s*\).*$/\1${gameap_public_path//\//\\/}>/" /etc/httpd/conf.d/gameap.conf
 
-    a2enmod rewrite
-    service apache2 start
+    sed -i '/ErrorLog/d' /etc/httpd/conf.d/gameap.conf
+    sed -i '/CustomLog/d' /etc/httpd/conf.d/gameap.conf
+
+    sed -i '/Require all granted/d' /etc/httpd/conf.d/gameap.conf
+
+    if [[ -f /etc/httpd/conf.d/php.conf ]]; then
+        php_fpm_handler="\"proxy:unix:/run/php-fpm/php-fpm.sock|fcgi://localhost\""
+        sed -i "s/^\(\s*SetHandler\).*proxy:unix:\/run\/php-fpm.*$/\1 ${php_fpm_handler//\//\\/}/" /etc/httpd/conf.d/php.conf
+    fi
+
+    service httpd start
 }
 
 ask_user ()
@@ -663,7 +674,7 @@ ask_user ()
 
     if [[ -z "${upgrade:-}" ]]; then
 
-        while [ -z "${gameap_host}" ]; do
+        while [[ -z "${gameap_host}" ]]; do
             read -p "Enter gameap host (example.com): " gameap_host
         done
 
@@ -678,7 +689,7 @@ ask_user ()
 
             while true; do
                 read -p "Enter number: " db_selected
-                case $db_selected in
+                case ${db_selected} in
                     1* ) db_selected="mysql"; echo "Okay! Will try install MySQL..."; break;;
                     2* ) db_selected="sqlite"; echo "Okay! Will try install SQLite..."; break;;
                     3* ) db_selected="none"; echo "Okay! ..."; break;;
@@ -716,8 +727,6 @@ main ()
 
     ask_user
 
-    update_packages_list
-
     curl_check
     gpg_check
 
@@ -731,11 +740,7 @@ main ()
         exit 0
     fi
 
-    install_packages software-properties-common apt-transport-https
-
-    # add_gpg_key "http://packages.gameap.ru/gameap-rep.gpg.key"
-    # echo "deb http://packages.gameap.ru/debian/ ${dist} main" > /etc/apt/sources.list.d/gameap.list
-    # update_packages_list
+    install_packages initscripts
 
     php_packages_check
 
@@ -744,29 +749,42 @@ main ()
         exit 1
     fi
 
-    install_packages php${php_version}-common \
-        php${php_version}-gd \
-        php${php_version}-cli \
-        php${php_version}-fpm \
-        php${php_version}-pdo \
-        php${php_version}-mysql \
-        php${php_version}-redis \
-        php${php_version}-curl \
-        php${php_version}-bz2 \
-        php${php_version}-zip \
-        php${php_version}-xml \
-        php${php_version}-mbstring \
-        php${php_version}-bcmath \
-        php${php_version}-gmp \
-        php${php_version}-intl
-    
+    install_packages php \
+        php${php_version} \
+        php${php_version}-php-common \
+        php-gd \
+        php-cli \
+        php-fpm \
+        php-pdo \
+        php-mysqlnd \
+        php-pecl-zip \
+        php-redis \
+        php-json \
+        php-xml \
+        php-mbstring \
+        php-bcmath \
+        php-gmp \
+        php-intl
+
+    # PHP. Listen unix socket /run/php-fpm/php-fpm.sock
+    php_fpm_listen=/var/run/php-fpm/php-fpm.sock
+    sed -i "s/^\(listen\s*=\s*\).*$/\1${php_fpm_listen//\//\\/}/" /etc/php-fpm.d/www.conf
+
+    sed -i "s/^\(;listen.owner\s*=\s*\).*$/listen.owner = www-data/" /etc/php-fpm.d/www.conf
+    sed -i "s/^\(;listen.group\s*=\s*\).*$/listen.group = www-data/" /etc/php-fpm.d/www.conf
+
+    sed -i "s/^\(listen.acl_users\s*=\s*\).*$/\1apache,nginx,www-data/" /etc/php-fpm.d/www.conf
+
+    sed -i "s/^\(user\s*=\s*\).*$/\1www-data/" /etc/php-fpm.d/www.conf
+    sed -i "s/^\(group\s*=\s*\).*$/\1www-data/" /etc/php-fpm.d/www.conf
+
     if [[ -n "${from_github:-}" ]]; then
         install_from_github
     else
         install_from_official_repo
     fi
 
-    case $db_selected in
+    case ${db_selected} in
         "mysql" )
             mysql_setup
 
@@ -776,8 +794,7 @@ main ()
             sed -i "s/^\(DB\_PASSWORD\s*=\s*\).*$/\1${database_user_password}/" .env
         ;;
 
-        "sqlite" ) 
-            install_packages php${php_version}-sqlite
+        "sqlite" )
             database_name="${gameap_path}/database.sqlite"
             touch $database_name
 
@@ -791,12 +808,17 @@ main ()
     if [[ "${db_selected}" != "none" ]]; then
         echo "Migrating database..."
         php artisan migrate --seed
+
         if [[ "$?" -ne "0" ]]; then
             echo "Unable to migrate database." >> /dev/stderr
             echo "Database seting up aborted." >> /dev/stderr
             exit 1
         fi
         echo "done"
+    fi
+
+    if ! id -u "www-data" > /dev/null 2>&1; then
+        adduser --no-create-home --system --user-group --shell /bin/false www-data
     fi
 
     if [[ "${web_selected}" != "none" ]]; then

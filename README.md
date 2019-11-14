@@ -1,4 +1,4 @@
-GameAP full auto installation script
+GameAP full auto installation scripts
 
 [![Build Status](https://drone.gameap.ru/api/badges/gameap/auto-install-scripts/status.svg)](https://drone.gameap.ru/gameap/auto-install-scripts)
 
@@ -12,20 +12,21 @@ GameAP full auto installation script
 |                       | 8 / jessie        | ✔         | Additional PHP repo is needed
 |                       | 7 / wheezy        | ✘         | No repositories with PHP >= 7.1
 |                       | 6 / squeeze       | ✘         | No repositories with PHP >= 7.1
-| Ubuntu                | 19.04 / disco     | ✔         | 
-|                       | 18.10 / cosmic    | ✔         | 
+| Ubuntu                | 19.10 / eoan      | ✔         | 
+|                       | 19.04 / disco     | ✔         | 
 |                       | 18.04 / bionic    | ✔         |
 |                       | 16.04 / xenial    | ✔         |
 |                       | 14.04 / trusty    | ✔         | Additional PHP repo is needed
 |                       | 12.04 / precise   | ✘         | No repositories with PHP >= 7.1
-| CentOS                | 7                 | ✘         | Not implemented
-|                       | 6                 | ✘         | Not implemented
+| CentOS                | 8                 | ✔         | 
+|                       | 7                 | ✔         | Additional PHP repo is needed.
+|                       | 6                 | ✔         | Additional PHP repo is needed. Additional MySQL Repo is needed
 
 ## Installation
 
 Download script and set execute permissions:
 ```
-curl https://raw.githubusercontent.com/gameap/auto-install-scripts/master/debian/install-en.sh \
+curl https://raw.githubusercontent.com/gameap/auto-install-scripts/master/install.sh \
         --output install-gameap.sh
 
 chmod +x install-gameap.sh
