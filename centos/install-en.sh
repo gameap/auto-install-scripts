@@ -339,7 +339,7 @@ install_from_github ()
     fi
     echo "done"
 
-    cp .example .env
+    cp .env.example .env
 
     echo
     echo "Generating encryption key..."
