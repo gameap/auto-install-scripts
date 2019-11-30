@@ -440,6 +440,11 @@ main ()
         echo "Unable to start gameap-daemon service" >> /dev/stderr
     fi
 
+    if command -v firewall-cmd > /dev/null; then
+        firewall-cmd --zone=public --add-port=31717/tcp --permanent
+        firewall-cmd --reload
+    fi
+
     systemctl enable gameap-daemon
 
     echo "Success"
