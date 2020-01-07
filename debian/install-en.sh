@@ -110,7 +110,7 @@ add_gpg_key ()
 
 generate_password()
 {
-    echo $(tr -cd '[:alnum:]' < /dev/urandom | fold -w18 | head -n1)
+    echo $(tr -cd 'a-zA-Z0-9' < /dev/urandom | fold -w18 | head -n1)
 }
 
 unknown_os ()
