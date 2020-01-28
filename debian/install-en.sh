@@ -113,6 +113,15 @@ generate_password()
     echo $(tr -cd 'a-zA-Z0-9' < /dev/urandom | fold -w18 | head -n1)
 }
 
+is_ipv4()
+{
+    if [[ ${1} =~ ^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$ ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 unknown_os ()
 {
     echo "Unfortunately, your operating system distribution and version are not supported by this script."
@@ -607,7 +616,12 @@ nginx_setup ()
 
     gameap_public_path="$gameap_path/public"
 
-    sed -i "s/^\(\s*server\_name\s*\).*$/\1${gameap_host}\;/" /etc/nginx/conf.d/gameap.conf
+    if is_ipv4 "${gameap_host}"; then
+        sed -i "s/^\(\s*listen\s*\).*$/\1${gameap_host}\:80\;/" /etc/nginx/conf.d/gameap.conf
+    else
+        sed -i "s/^\(\s*server\_name\s*\).*$/\1${gameap_host}\;/" /etc/nginx/conf.d/gameap.conf
+    fi;
+
     sed -i "s/^\(\s*root\s*\).*$/\1${gameap_public_path//\//\\/}\;/" /etc/nginx/conf.d/gameap.conf
     sed -i "s/^\(\s*root\s*\).*$/\1${gameap_public_path//\//\\/}\;/" /etc/nginx/conf.d/gameap.conf
 
