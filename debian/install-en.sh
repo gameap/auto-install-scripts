@@ -50,6 +50,9 @@ parse_options ()
             --github)
                 from_github=1
             ;;
+            --develop)
+                develop=1
+            ;;
             --upgrade)
                 upgrade=1
             ;;
@@ -357,7 +360,13 @@ install_from_github ()
     install_packages nodejs
     echo "done"
 
-    git clone https://github.com/et-nik/gameap.git $gameap_path
+    if [[ -z "${develop:-}" ]]; then
+        git_branch="develop"
+    else
+        git_branch="master"
+    fi
+
+    git clone -b $git_branch https://github.com/et-nik/gameap.git $gameap_path
     if [[ "$?" -ne "0" ]]; then
         echo "Unable to download from GitHub" >> /dev/stderr
         exit 1
