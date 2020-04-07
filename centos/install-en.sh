@@ -346,9 +346,9 @@ install_from_github ()
     echo "done"
 
     if [[ -z "${develop:-}" ]]; then
-        git_branch="develop"
-    else
         git_branch="master"
+    else
+        git_branch="develop"
     fi
 
     git clone -b $git_branch https://github.com/et-nik/gameap.git $gameap_path
