@@ -1,5 +1,6 @@
 kind: pipeline
-name: buster-nginx-mysql
+name: debian-buster-nginx-mysql
+type: docker
 
 steps:
   - name: build
@@ -12,7 +13,22 @@ steps:
 
 ---
 kind: pipeline
-name: debian-nginx-mysql
+name: debian-buster-apache-mysql
+type: docker
+
+steps:
+  - name: build
+    image: debian:buster
+    environment:
+      WEB_SERVER: apache
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
+name: debian-stretch-nginx-mysql
+type: docker
 
 steps:
   - name: build
@@ -25,7 +41,8 @@ steps:
 
 ---
 kind: pipeline
-name: debian-apache-mysql
+name: debian-stretch-apache-mysql
+type: docker
 
 steps:
   - name: build
@@ -38,7 +55,8 @@ steps:
 
 ---
 kind: pipeline
-name: debian-nginx-sqlite
+name: debian-stretch-nginx-sqlite
+type: docker
 
 steps:
   - name: build
@@ -51,7 +69,8 @@ steps:
 
 ---
 kind: pipeline
-name: debian-apache-sqlite
+name: debian-stretch-apache-sqlite
+type: docker
 
 steps:
   - name: build
@@ -64,7 +83,38 @@ steps:
 
 ---
 kind: pipeline
-name: ubuntu-nginx-mysql
+name: ubuntu-focal-nginx-mysql
+type: docker
+
+steps:
+  - name: build
+    image: ubuntu:focal
+    failure: ignore
+    environment:
+      WEB_SERVER: nginx
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
+name: ubuntu-focal-apache-mysql
+type: docker
+
+steps:
+  - name: build
+    image: ubuntu:focal
+    failure: ignore
+    environment:
+      WEB_SERVER: apache
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
+name: ubuntu-bionic-nginx-mysql
+type: docker
 
 steps:
   - name: build
@@ -77,7 +127,8 @@ steps:
 
 ---
 kind: pipeline
-name: ubuntu-apache-mysql
+name: ubuntu-bionic-apache-mysql
+type: docker
 
 steps:
   - name: build
@@ -87,9 +138,39 @@ steps:
       DATABASE: mysql
     commands:
       - ./run_test.sh
+
 ---
 kind: pipeline
-name: xenial-nginx-mysql
+name: ubuntu-bionic-nginx-sqlite
+type: docker
+
+steps:
+  - name: build
+    image: ubuntu:bionic
+    environment:
+      WEB_SERVER: nginx
+      DATABASE: sqlite
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
+name: ubuntu-bionic-apache-sqlite
+type: docker
+
+steps:
+  - name: build
+    image: ubuntu:bionic
+    environment:
+      WEB_SERVER: apache
+      DATABASE: sqlite
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
+name: ubuntu-xenial-nginx-mysql
+type: docker
 
 steps:
   - name: build
@@ -102,33 +183,8 @@ steps:
 
 ---
 kind: pipeline
-name: ubuntu-nginx-sqlite
-
-steps:
-  - name: build
-    image: ubuntu:bionic
-    environment:
-      WEB_SERVER: nginx
-      DATABASE: sqlite
-    commands:
-      - ./run_test.sh
-
----
-kind: pipeline
-name: ubuntu-apache-sqlite
-
-steps:
-  - name: build
-    image: ubuntu:bionic
-    environment:
-      WEB_SERVER: apache
-      DATABASE: sqlite
-    commands:
-      - ./run_test.sh
-
----
-kind: pipeline
-name: jessie-nginx-sqlite
+name: debian-jessie-nginx-sqlite
+type: docker
 
 steps:
   - name: build
@@ -141,7 +197,8 @@ steps:
 
 ---
 kind: pipeline
-name: jessie-pseudo-ovz
+name: debian-jessie-pseudo-ovz
+type: docker
 
 steps:
   - name: build
