@@ -318,6 +318,21 @@ main ()
 
     steamcmd_install
 
+    if ! mkdir -p "${work_dir}/servers"; then
+        echo "Unable to create ${work_dir}/servers directory" >> /dev/stderr
+        exit 1
+    fi
+
+    if ! chmod 755 "${work_dir}/servers"; then
+        echo "Unable to chmod ${work_dir}/servers directory" >> /dev/stderr
+        exit 1
+    fi
+
+    if ! chown -R gameap:gameap $work_dir; then
+        echo "Unable to chown work directory" >> /dev/stderr
+        exit 1
+    fi
+
     install_packages gameap-daemon openssl unzip xz
     generate_certs
 
@@ -438,6 +453,7 @@ main ()
 
     if ! /etc/init.d/gameap-daemon start; then
         echo "Unable to start gameap-daemon service" >> /dev/stderr
+        exit 1
     fi
 
     if command -v firewall-cmd > /dev/null; then
@@ -445,7 +461,9 @@ main ()
         firewall-cmd --reload
     fi
 
-    systemctl enable gameap-daemon
+    if command -v systemctl 2>/dev/null; then
+      systemctl enable gameap-daemon
+    fi
 
     echo "Success"
 }
