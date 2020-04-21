@@ -480,7 +480,15 @@ upgrade_migrate ()
         exit 1
     fi
     echo "done"
+}
 
+upgrade_postscripts ()
+{
+    cd $gameap_path || exit 1
+
+    php artisan cache:clear
+    php artisan config:cache
+    php artisan view:cache
 }
 
 upgrade_from_github ()
@@ -515,6 +523,7 @@ upgrade_from_github ()
     echo "done"
 
     upgrade_migrate
+    upgrade_postscripts
 }
 
 upgrade_from_official_repo ()
@@ -523,6 +532,7 @@ upgrade_from_official_repo ()
 
     download_unpack_from_repo
     upgrade_migrate
+    upgrade_postscripts
 }
 
 
@@ -781,9 +791,8 @@ main ()
         php${php_version}-gd \
         php${php_version}-cli \
         php${php_version}-fpm \
-        php${php_version}-pdo \
         php${php_version}-mysql \
-        php${php_version}-redis \
+        php${php_version}-pgsql \
         php${php_version}-curl \
         php${php_version}-bz2 \
         php${php_version}-zip \
