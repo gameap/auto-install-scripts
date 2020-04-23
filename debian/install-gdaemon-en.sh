@@ -260,13 +260,15 @@ generate_certs ()
 
 get_ds_data ()
 {
-    hosts=(ifconfig.co ifconfig.me ipecho.net/plain icanhazip.com)
+    hosts=(ifconfig.me ipecho.net/plain icanhazip.com ifconfig.co)
 
     for host in ${hosts[*]}; do
         ds_public_ip=$(curl -qL ${host}) &> /dev/null
 
         if [[ -n "$ds_public_ip" ]]; then
-            break
+            if is_ipv4 ${ds_public_ip} || is_ipv6 ${ds_public_ip}; then
+                break;
+            fi
         fi
     done
 
@@ -287,8 +289,29 @@ get_ds_data ()
     done
 }
 
-function version { 
+version ()
+{
     echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; 
+}
+
+is_ipv4 ()
+{
+    if [[ $1 =~ ^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$ ]]; then
+        # IPv4
+        return 0
+    fi
+
+    return 1
+}
+
+is_ipv6 ()
+{
+    if [[ $1 =~ ^([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}$ ]]; then
+        # IPv6
+        return 0
+    fi
+
+    return 1
 }
 
 main ()
@@ -371,7 +394,7 @@ main ()
             if [[ "${#ds_ip_list[@]}" -gt 1 ]]; then
                 for ip in ${ds_ip_list[*]}; do
                     # IPv4 is a priority. Check for IPv4.
-                    if [[ ${ip} =~ ^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$ ]]; then
+                    if is_ipv4 ${ip}; then
                         gdaemon_host="${ip}"
                         break
                     fi
@@ -412,7 +435,7 @@ main ()
 
         if [[ "$?" -ne "0" ]]; then
             echo "Curl Result: ${result}"
-            echo
+            echo "Curl Fields: ${curl_fields[@]}"
             echo
 
             echo "Unable to insert dedicated server" >> /dev/stderr
