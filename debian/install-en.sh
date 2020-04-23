@@ -581,15 +581,13 @@ mysql_setup ()
 
         innodb_version=$(mysql -u root --disable-column-names -s -r -e "SELECT @@GLOBAL.innodb_version;")
 
-        if dpkg --compare-versions "${innodb_version}" "lt" "5.7"; then 
-            password_field="password"
-        else 
-            password_field="authentication_string"
+        if dpkg --compare-versions "${innodb_version}" "lt" "5.7"; then
+            mysql -u root -e "use mysql;\
+                update user set password=PASSWORD(\"${database_root_password}\") where User='root';\
+                flush privileges;" &> /dev/null
+        else
+            mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${database_root_password}';" &> /dev/null
         fi
-
-        mysql -u root -e "use mysql;\
-            update user set ${password_field}=PASSWORD(\"${database_root_password}\") where User='root';\
-            flush privileges;" &> /dev/null
 
         if [[ "$?" -ne "0" ]]; then echo "Unable to set database root password. MySQL seting up failed." >> /dev/stderr; exit 1; fi
 
@@ -615,7 +613,10 @@ nginx_setup ()
         if [[ "${os}" = "debian" ]]; then
             echo "deb http://nginx.org/packages/debian/ ${dist} nginx" | tee /etc/apt/sources.list.d/nginx.list
         elif [[ "${os}" = "ubuntu" ]]; then
-            echo "deb http://nginx.org/packages/ubuntu/ ${dist} nginx" | tee /etc/apt/sources.list.d/nginx.list
+
+            if [[ "${dist}" -ne "focal" ]]; then
+                echo "deb http://nginx.org/packages/ubuntu/ ${dist} nginx" | tee /etc/apt/sources.list.d/nginx.list
+            fi
         fi
 
         update_packages_list
