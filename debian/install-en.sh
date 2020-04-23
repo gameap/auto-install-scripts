@@ -613,7 +613,10 @@ nginx_setup ()
         if [[ "${os}" = "debian" ]]; then
             echo "deb http://nginx.org/packages/debian/ ${dist} nginx" | tee /etc/apt/sources.list.d/nginx.list
         elif [[ "${os}" = "ubuntu" ]]; then
-            echo "deb http://nginx.org/packages/ubuntu/ ${dist} nginx" | tee /etc/apt/sources.list.d/nginx.list
+
+            if [[ "${dist}" -ne "focal" ]]; then
+                echo "deb http://nginx.org/packages/ubuntu/ ${dist} nginx" | tee /etc/apt/sources.list.d/nginx.list
+            fi
         fi
 
         update_packages_list
