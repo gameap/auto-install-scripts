@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-set -u
-set -e
-shopt -s dotglob
+language=$(echo $LANGUAGE | cut -d_ -f1)
+
+[[ "${DEBUG:-}" == 'true' ]] && set -x
 
 detect_os ()
 {
@@ -39,7 +39,6 @@ detect_os ()
     elif [[ -n "$(command -v lsb_release 2>/dev/null)" ]]; then
         dist=$(lsb_release -c | cut -f2)
         os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
-
     elif [[ -e /etc/debian_version ]]; then
         os=$(cat /etc/issue | head -1 | awk '{ print tolower($1) }')
         if grep -q '/' /etc/debian_version; then
@@ -73,39 +72,69 @@ detect_os ()
     # lowercase
     os=${os,,}
     dist=${dist,,}
+
+    echo "Detected operating system as $os/$dist."
 }
 
-echo
-echo "Start building"
-echo "Web-server: ${WEB_SERVER}"
-echo "Database: ${DATABASE}"
-echo
+unknown_os ()
+{
+    echo "Unfortunately, your operating system distribution and version are not supported by this script."
+    exit 2
+}
+
+curl_check ()
+{
+  echo "Checking for curl..."
+  if command -v curl > /dev/null; then
+    echo "Detected curl..."
+  else
+    echo "Installing curl..."
+
+    if [[ "${os}" = "debian" ]]; then
+        apt-get -y update &> /dev/null
+        apt-get -q -y install curl &> /dev/null
+    elif [[ "${os}" = "ubuntu" ]]; then
+        apt-get -y update &> /dev/null
+        apt-get install -q -y curl &> /dev/null
+    elif [[ "${os}" = "centos" ]]; then
+        yum -q -y update &> /dev/null
+        yum -q -y install curl &> /dev/null
+    fi
+
+    if [[ "$?" -ne "0" ]]; then
+      echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work." >> /dev/stderr
+      echo "Repository installation aborted." >> /dev/stderr
+      exit 1
+    fi
+  fi
+}
 
 detect_os
 
-echo "127.0.0.1 test.gameap" > /etc/hosts
+if [[ "${os}" == "debian" ]] \
+    || [[ "${os}" == "ubuntu" ]]; then
 
-if [[ ${os} == "debian" ]] || [[ ${os} == "ubuntu" ]]; then
-    ./debian/install-en.sh --github --path=/var/www/gameap --host=test.gameap --web-server=${WEB_SERVER} --database=${DATABASE}
-elif [[ ${os} == "centos" ]]; then
-    ./centos/install-en.sh --github --path=/var/www/gameap --host=test.gameap --web-server=${WEB_SERVER} --database=${DATABASE}
+    script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/debian/install-gdaemon-en.sh"
+elif [[ "${os}" == "centos" ]]; then
+    script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/centos/install-gdaemon-en.sh"
 else
-    echo "Unknown OS" >> /dev/stderr
+    echo "Your operating system not supported" >> /dev/stderr
     exit 1
 fi
 
-echo
-echo "Checking available gameap host"
-echo
-curl -sL -w "HTTP CODE: %{http_code}\\n" "http://test.gameap/login" -o /dev/null
+echo "Preparation for installation..."
+curl_check
 
 echo
-echo "Checking GameAP Daemon installation"
+echo
+echo "Downloading installator for your operating system..."
+curl -sL $script --output /tmp/gameap-daemon-install.sh &> /dev/null
+chmod +x /tmp/gameap-daemon-install.sh
 
-echo "Illuminate\Support\Facades\Cache::put('gdaemonAutoCreateToken', 'fake', 1800);" | /var/www/gameap/artisan tinker
-
-if [[ ${os} == "debian" ]] || [[ ${os} == "ubuntu" ]]; then
-    export createToken=fake; export panelHost=http://test.gameap; ./debian/install-gdaemon-en.sh
-elif [[ ${os} == "centos" ]]; then
-    export createToken=fake; export panelHost=http://test.gameap; ./centos/install-gdaemon-en.sh
-fi
+echo
+echo
+echo "Running..."
+echo
+echo
+bash /tmp/gameap-daemon-install.sh $@
+rm /tmp/gameap-daemon-install.sh

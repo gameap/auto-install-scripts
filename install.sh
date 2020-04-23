@@ -4,35 +4,56 @@ language=$(echo $LANGUAGE | cut -d_ -f1)
 
 detect_os ()
 {
-  if [[ ( -z "${os}" ) && ( -z "${dist}" ) ]]; then
-    if [ -e /etc/lsb-release ]; then
-      . /etc/lsb-release
+    os=""
+    dist=""
 
-      if [ "${ID}" = "raspbian" ]; then
-        os=${ID}
-        dist=`cut --delimiter='.' -f1 /etc/debian_version`
-      else
-        os=${DISTRIB_ID}
-        dist=${DISTRIB_CODENAME}
+    if [[ -e /etc/lsb-release ]]; then
+        . /etc/lsb-release
 
-        if [ -z "$dist" ]; then
-          dist=${DISTRIB_RELEASE}
+        if [[ "${ID:-}" = "raspbian" ]]; then
+            os=${ID}
+            dist=$(cut --delimiter='.' -f1 /etc/debian_version)
+        else
+            os=${DISTRIB_ID}
+            dist=${DISTRIB_CODENAME}
+
+            if [ -z "$dist" ]; then
+                dist=${DISTRIB_RELEASE}
+            fi
         fi
-      fi
+    elif [[ -e /etc/os-release ]]; then
+        . /etc/os-release
 
-    elif [ `which lsb_release 2>/dev/null` ]; then
-      dist=`lsb_release -c | cut -f2`
-      os=`lsb_release -i | cut -f2 | awk '{ print tolower($1) }'`
+        os="${ID:-}"
 
-    elif [ -e /etc/debian_version ]; then
-      os=`cat /etc/issue | head -1 | awk '{ print tolower($1) }'`
-      if grep -q '/' /etc/debian_version; then
-        dist=`cut --delimiter='/' -f1 /etc/debian_version`
-      else
-        dist=`cut --delimiter='.' -f1 /etc/debian_version`
-      fi
+        if [[ -n "${VERSION_CODENAME:-}" ]]; then
+            dist=${VERSION_CODENAME:-}
+        elif [[ -n "${VERSION_ID:-}" ]]; then
+            dist=${VERSION_ID:-}
+        fi
+    elif [[ -f /etc/system-release-cpe ]]; then
+        os=$(cut --delimiter=":" -f 3 /etc/system-release-cpe)
+        dist=$(cut --delimiter=":" -f 5 /etc/system-release-cpe)
+    elif [[ -n "$(command -v lsb_release 2>/dev/null)" ]]; then
+        dist=$(lsb_release -c | cut -f2)
+        os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
 
-      if [ "${os}" = "debian" ]; then
+    elif [[ -e /etc/debian_version ]]; then
+        os=$(cat /etc/issue | head -1 | awk '{ print tolower($1) }')
+        if grep -q '/' /etc/debian_version; then
+            dist=$(cut --delimiter='/' -f1 /etc/debian_version)
+        else
+            dist=$(cut --delimiter='.' -f1 /etc/debian_version)
+        fi
+    else
+        unknown_os
+    fi
+
+    if [[ -z "$dist" ]]; then
+        unknown_os
+    fi
+
+    if [[ "${os}" = "debian" ]]; then
         case $dist in
             6* ) dist="squeeze" ;;
             7* ) dist="wheezy" ;;
@@ -41,26 +62,23 @@ detect_os ()
             10* ) dist="buster" ;;
             11* ) dist="bullseye" ;;
         esac
-      fi
-
-    else
-      unknown_os
     fi
-  fi
 
-  if [ -z "$dist" ]; then
-    unknown_os
-  fi
+    # remove whitespace from OS and dist name
+    os="${os// /}"
+    dist="${dist// /}"
 
-  # remove whitespace from OS and dist name
-  os="${os// /}"
-  dist="${dist// /}"
+    # lowercase
+    os=${os,,}
+    dist=${dist,,}
 
-  # lowercase
-  os=${os,,}
-  dist=${dist,,}
+    echo "Detected operating system as $os/$dist."
+}
 
-  echo "Detected operating system as $os/$dist."
+unknown_os ()
+{
+    echo "Unfortunately, your operating system distribution and version are not supported by this script."
+    exit 2
 }
 
 curl_check ()
@@ -97,9 +115,7 @@ if [ "${os}" = "debian" ]; then
 elif [ "${os}" = "ubuntu" ]; then 
     script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/debian/install-en.sh"
 elif [ "${os}" = "centos" ]; then 
-    echo "Support CentOS is coming soon"
-    echo "Your operating system not supported"
-    exit 1
+    script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/centos/install-en.sh"
 else
     echo "Your operating system not supported"
     exit 1

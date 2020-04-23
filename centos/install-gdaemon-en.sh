@@ -28,14 +28,9 @@ show_help ()
 update_packages_list ()
 {
     echo
-    echo -n "Running apt-get update... "
+    echo -n "Running yum update... "
 
-    apt-get update &> /dev/null
-
-    if [[ "$?" -ne "0" ]]; then
-        echo "Unable to update apt" >> /dev/stderr
-        exit 1
-    fi
+    yum check-update &> /dev/null || true
 
     echo "done."
     echo
@@ -47,7 +42,7 @@ install_packages ()
 
     echo
     echo -n "Installing ${packages[*]}... "
-    apt-get install -y ${packages[*]} &> /dev/null
+    yum install -y --setopt=protected_multilib=false ${packages[*]} &> /dev/null
 
     if [[ "$?" -ne "0" ]]; then
         echo "Unable to install ${packages[*]}." >> /dev/stderr
@@ -57,17 +52,6 @@ install_packages ()
 
     echo "done."
     echo
-}
-
-add_gpg_key ()
-{
-    gpg_key_url=$1
-    curl -SfL "${gpg_key_url}" 2> /dev/null | apt-key add - &>/dev/null
-
-    if [[ "$?" -ne "0" ]]; then
-      echo "Unable to add GPG key!" >> /dev/stderr
-      exit 1
-    fi
 }
 
 unknown_os ()
@@ -105,7 +89,9 @@ detect_os ()
         elif [[ -n "${VERSION_ID:-}" ]]; then
             dist=${VERSION_ID:-}
         fi
-
+    elif [[ -f /etc/system-release-cpe ]]; then
+        os=$(cut --delimiter=":" -f 3 /etc/system-release-cpe)
+        dist=$(cut --delimiter=":" -f 5 /etc/system-release-cpe)
     elif [[ -n "$(command -v lsb_release 2>/dev/null)" ]]; then
         dist=$(lsb_release -c | cut -f2)
         os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
@@ -155,7 +141,8 @@ gpg_check ()
         echo "Detected gpg..."
     else
         echo "Installing gnupg for GPG verification..."
-        apt-get install -y gnupg
+        yum install -y gnupg
+
         if [[ "$?" -ne "0" ]]; then
             echo "Unable to install GPG! Your base system has a problem; please check your default OS's package repositories because GPG should work." >> /dev/stderr
             echo "Repository installation aborted." >> /dev/stderr
@@ -173,7 +160,7 @@ curl_check ()
         echo "Detected curl..."
     else
         echo "Installing curl..."
-        apt-get install -q -y curl
+        yum install -q -y curl
         if [[ "$?" -ne "0" ]]; then
             echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work." >> /dev/stderr
             echo "Repository installation aborted." >> /dev/stderr
@@ -196,7 +183,9 @@ steamcmd_install ()
     fi
 
     if [[ $(getconf LONG_BIT) == "64" ]]; then
-        install_packages lib32gcc1 lib32stdc++6
+        install_packages glibc.i686 libstdc++.i686
+    else
+        install_packages glibc libstdc++
     fi
 
     cd /srv/gameap/steamcmd || return
@@ -300,8 +289,7 @@ main ()
     curl_check
     gpg_check
 
-    add_gpg_key "http://packages.gameap.ru/gameap-rep.gpg.key"
-    echo "deb http://packages.gameap.ru/${os}/ ${dist} main" > /etc/apt/sources.list.d/gameap.list
+    curl -o "/etc/yum.repos.d/gameap.repo" "http://packages.gameap.ru/centos/gameap-centos${dist}.repo"
     update_packages_list
     
     work_dir="/srv/gameap"
@@ -345,7 +333,7 @@ main ()
         exit 1
     fi
 
-    install_packages gameap-daemon openssl unzip xz-utils
+    install_packages gameap-daemon openssl unzip xz
     generate_certs
 
     if [[ -n "${createToken}" ]]; then
@@ -463,9 +451,14 @@ main ()
 
     echo "Starting GameAP Daemon..."
 
-    if ! service gameap-daemon start; then
+    if ! /etc/init.d/gameap-daemon start; then
         echo "Unable to start gameap-daemon service" >> /dev/stderr
         exit 1
+    fi
+
+    if command -v firewall-cmd > /dev/null; then
+        firewall-cmd --zone=public --add-port=31717/tcp --permanent
+        firewall-cmd --reload
     fi
 
     if command -v systemctl 2>/dev/null; then
