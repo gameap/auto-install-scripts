@@ -411,6 +411,10 @@ main ()
           ${panelHost}/gdaemon/create/${createToken}) &> /dev/null
 
         if [[ "$?" -ne "0" ]]; then
+            echo "Curl Result: ${result}"
+            echo
+            echo
+
             echo "Unable to insert dedicated server" >> /dev/stderr
             exit 1
         fi
