@@ -609,12 +609,12 @@ nginx_setup ()
         echo "Detected installed nginx..."
     else
         add_gpg_key "https://nginx.org/keys/nginx_signing.key"
-        
+
         if [[ "${os}" = "debian" ]]; then
             echo "deb http://nginx.org/packages/debian/ ${dist} nginx" | tee /etc/apt/sources.list.d/nginx.list
         elif [[ "${os}" = "ubuntu" ]]; then
 
-            if [[ "${dist}" -ne "focal" ]]; then
+            if [[ "${dist}" != "focal" ]]; then
                 echo "deb http://nginx.org/packages/ubuntu/ ${dist} nginx" | tee /etc/apt/sources.list.d/nginx.list
             fi
         fi
@@ -623,8 +623,14 @@ nginx_setup ()
         install_packages nginx
     fi
 
+    if [[ "${dist}" != "focal" ]]; then
+        nginx_gameap_conf_path="/etc/nginx/conf.d/gameap.conf"
+    else
+        nginx_gameap_conf_path="/etc/nginx/sites-enabled/gameap.conf"
+    fi
+
     curl -SfL https://raw.githubusercontent.com/gameap/auto-install-scripts/master/web-server-configs/nginx-no-ssl.conf \
-        --output /etc/nginx/conf.d/gameap.conf &> /dev/null
+        --output "${nginx_gameap_conf_path}" &> /dev/null
 
     if [[ "$?" -ne "0" ]]; then
         echo "Unable to download default nginx config" >> /dev/stderr
@@ -637,16 +643,16 @@ nginx_setup ()
     gameap_public_path="$gameap_path/public"
 
     if is_ipv4 "${gameap_host}"; then
-        sed -i "s/^\(\s*listen\s*\).*$/\1${gameap_host}\:80\;/" /etc/nginx/conf.d/gameap.conf
+        sed -i "s/^\(\s*listen\s*\).*$/\1${gameap_host}\:80\;/" ${nginx_gameap_conf_path}
     else
-        sed -i "s/^\(\s*server\_name\s*\).*$/\1${gameap_host}\;/" /etc/nginx/conf.d/gameap.conf
+        sed -i "s/^\(\s*server\_name\s*\).*$/\1${gameap_host}\;/" ${nginx_gameap_conf_path}
     fi;
 
-    sed -i "s/^\(\s*root\s*\).*$/\1${gameap_public_path//\//\\/}\;/" /etc/nginx/conf.d/gameap.conf
-    sed -i "s/^\(\s*root\s*\).*$/\1${gameap_public_path//\//\\/}\;/" /etc/nginx/conf.d/gameap.conf
+    sed -i "s/^\(\s*root\s*\).*$/\1${gameap_public_path//\//\\/}\;/" ${nginx_gameap_conf_path}
+    sed -i "s/^\(\s*root\s*\).*$/\1${gameap_public_path//\//\\/}\;/" ${nginx_gameap_conf_path}
 
     fastcgi_pass=unix:/var/run/php/php${php_version}-fpm.sock
-    sed -i "s/^\(\s*fastcgi_pass\s*\).*$/\1${fastcgi_pass//\//\\/}\;/" /etc/nginx/conf.d/gameap.conf
+    sed -i "s/^\(\s*fastcgi_pass\s*\).*$/\1${fastcgi_pass//\//\\/}\;/" ${nginx_gameap_conf_path}
 
     service nginx start
     service php${php_version}-fpm start

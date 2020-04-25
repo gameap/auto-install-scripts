@@ -1,6 +1,6 @@
 GameAP full auto installation scripts
 
-[![Build Status](https://drone.gameap.ru/api/badges/gameap/auto-install-scripts/status.svg)](https://drone.gameap.ru/gameap/auto-install-scripts)
+[![Build Status](https://cloud.drone.io/api/badges/gameap/auto-install-scripts/status.svg)](https://cloud.drone.io/gameap/auto-install-scripts)
 
 ## Supported OS
 
@@ -12,7 +12,8 @@ GameAP full auto installation scripts
 |                       | 8 / jessie        | ✔         | Additional PHP repo is needed
 |                       | 7 / wheezy        | ✘         | No repositories with PHP >= 7.1
 |                       | 6 / squeeze       | ✘         | No repositories with PHP >= 7.1
-| Ubuntu                | 19.10 / eoan      | ✔         | 
+| Ubuntu                | 20.04 / focal     | ✔         | 
+|                       | 19.10 / eoan      | ✔         | 
 |                       | 19.04 / disco     | ✔         | 
 |                       | 18.04 / bionic    | ✔         |
 |                       | 16.04 / xenial    | ✔         |
