@@ -609,12 +609,12 @@ nginx_setup ()
         echo "Detected installed nginx..."
     else
         add_gpg_key "https://nginx.org/keys/nginx_signing.key"
-        
+
         if [[ "${os}" = "debian" ]]; then
             echo "deb http://nginx.org/packages/debian/ ${dist} nginx" | tee /etc/apt/sources.list.d/nginx.list
         elif [[ "${os}" = "ubuntu" ]]; then
 
-            if [[ "${dist}" -ne "focal" ]]; then
+            if [[ "${dist}" != "focal" ]]; then
                 echo "deb http://nginx.org/packages/ubuntu/ ${dist} nginx" | tee /etc/apt/sources.list.d/nginx.list
             fi
         fi
@@ -623,14 +623,14 @@ nginx_setup ()
         install_packages nginx
     fi
 
-    if [[ "${dist}" -ne "focal" ]]; then
+    if [[ "${dist}" != "focal" ]]; then
         nginx_gameap_conf_path="/etc/nginx/conf.d/gameap.conf"
     else
         nginx_gameap_conf_path="/etc/nginx/sites-enabled/gameap.conf"
     fi
 
     curl -SfL https://raw.githubusercontent.com/gameap/auto-install-scripts/master/web-server-configs/nginx-no-ssl.conf \
-        --output ${nginx_gameap_conf_path} &> /dev/null
+        --output "${nginx_gameap_conf_path}" &> /dev/null
 
     if [[ "$?" -ne "0" ]]; then
         echo "Unable to download default nginx config" >> /dev/stderr
