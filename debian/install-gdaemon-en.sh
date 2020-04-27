@@ -419,8 +419,17 @@ main ()
             echo 
             echo "Old kernel detected..."
             echo "Using screen package instead gameap-starter..."
-            echo 
-            
+            echo
+
+            if [[ "${os}" == "ubuntu" ]]; then
+                # Update libstdc++6 on Ubuntu Xenial OpenVZ
+                install_packages software-properties-common
+                add-apt-repository -y ppa:ubuntu-toolchain-r/test
+                update_packages_list
+
+                install_packages libstdc++6
+            fi
+
             install_packages screen
             curl -o $work_dir/server.sh  https://raw.githubusercontent.com/et-nik/gameap-legacy/v1.2-stable/bin/Linux/server.sh
             chmod +x $work_dir/server.sh
