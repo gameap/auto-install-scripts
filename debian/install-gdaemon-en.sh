@@ -289,10 +289,6 @@ get_ds_data ()
     hostnames=$(hostname -I)
 
     for ip in ${hostnames[*]}; do
-        if [[ "$ip" == "$ds_public_ip" ]]; then
-            continue
-        fi
-
         if [[ "$ip" == "127."* ]]; then
             continue
         fi
