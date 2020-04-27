@@ -289,10 +289,6 @@ get_ds_data ()
     hostnames=$(hostname -I)
 
     for ip in ${hostnames[*]}; do
-        if [[ "$ip" == "$ds_public_ip" ]]; then
-            continue
-        fi
-
         if [[ "$ip" == "127."* ]]; then
             continue
         fi
@@ -492,6 +488,10 @@ main ()
 
                 echo "Unable to edit GDaemon configuration (/etc/gameap-daemon/gameap-daemon.cfg)"
                 exit 1
+            fi
+
+            if is_ipv6 ${gdaemon_host}; then
+                sed -i "s/listen_ip.*$/listen_ip=::/" /etc/gameap-daemon/gameap-daemon.cfg
             fi
         else
             echo
