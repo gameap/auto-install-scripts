@@ -286,9 +286,17 @@ get_ds_data ()
         fi
     done
 
+    if [[ -n $ds_public_ip ]]; then
+        ds_ip_list+=($ds_public_ip)
+    fi
+
     hostnames=$(hostname -I)
 
     for ip in ${hostnames[*]}; do
+        if [[ "$ip" == "$ds_public_ip" ]]; then
+            continue
+        fi
+
         if [[ "$ip" == "127."* ]]; then
             continue
         fi
@@ -388,7 +396,6 @@ main ()
         echo
     
         declare -a curl_fields
-        curl_fields+=("-F ip[]=${ds_public_ip} ")
 
         if [[ -z "${ds_ip_list:-}" ]]; then
             gdaemon_host=$ds_public_ip
