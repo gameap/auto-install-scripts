@@ -547,13 +547,13 @@ cron_setup ()
 mysql_setup ()
 {
     if command -v mysqld > /dev/null; then
+        mysql_manual=1
+
         echo
         echo "Detected installed mysql..."
 
         echo "MySQL configuring skipped."
         echo "Please configure MySQL manually."
-
-        mysql_manual=1
 
         ask_mysql_credentials
 
@@ -564,6 +564,8 @@ mysql_setup ()
             ask_mysql_credentials
         done
     else
+        mysql_manual=0
+
         database_root_password=$(generate_password)
         database_user_name="gameap"
         database_user_password=$(generate_password)
@@ -844,7 +846,13 @@ main ()
 
     if [[ "${db_selected}" != "none" ]]; then
         echo "Migrating database..."
-        php artisan migrate --seed
+
+        if [[ ${mysql_manual:-0} == 1 ]]; then
+            php artisan migrate
+        else
+            php artisan migrate --seed
+        fi
+
         if [[ "$?" -ne "0" ]]; then
             echo "Unable to migrate database." >> /dev/stderr
             echo "Database seting up aborted." >> /dev/stderr
