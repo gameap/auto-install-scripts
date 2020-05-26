@@ -546,10 +546,6 @@ cron_setup ()
 
 mysql_setup ()
 {
-    #while true; do read -p "Enter MySQL root password: " database_root_password; done
-    #while true; do read -p "Enter MySQL user name: " database_user_name; done
-    #while true; do read -p "Enter MySQL user password: " database_user_password; done
-
     if command -v mysqld > /dev/null; then
         echo
         echo "Detected installed mysql..."
@@ -559,9 +555,14 @@ mysql_setup ()
 
         mysql_manual=1
 
-        read -p "Enter DB username: " database_user_name
-        read -p "Enter DB password: " database_user_password
-        read -p "Enter DB name: " database_name
+        ask_mysql_credentials
+
+        until mysql -u ${database_user_name} -p${database_user_password} -e ";" ; do
+            echo
+            echo "Can't connect to MySQL. Invalid credentials. Please retry"
+
+            ask_mysql_credentials
+        done
     else
         database_root_password=$(generate_password)
         database_user_name="gameap"
@@ -755,6 +756,13 @@ ask_user ()
         fi
 
     fi
+}
+
+ask_mysql_credentials ()
+{
+    read -p "Enter DB username: " database_user_name
+    read -p "Enter DB password: " database_user_password
+    read -p "Enter DB name: " database_name
 }
 
 main ()
