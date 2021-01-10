@@ -327,16 +327,6 @@ php_packages_check ()
         return
     fi
     echo "PHP 7.3 not available..."
-    
-    echo
-    echo "Checking for PHP 7.2 version available..."
-
-    if [[ ! -z "$(apt-cache policy php | grep 7.2)" ]]; then
-        echo "PHP 7.2 available"
-        php_version="7.2"
-        return
-    fi
-    echo "PHP 7.2 not available..."
 
     if [[ -z $not_repo ]]; then
         echo
@@ -797,7 +787,7 @@ main ()
     php_packages_check
 
     if [[ -z "${php_version}" ]]; then
-        echo "Unable to find PHP >= 7.2" >> /dev/stderr
+        echo "Unable to find PHP >= 7.3" >> /dev/stderr
         exit 1
     fi
 
