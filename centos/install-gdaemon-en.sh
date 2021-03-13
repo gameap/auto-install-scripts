@@ -15,6 +15,9 @@ parse_options ()
                 show_help
                 exit 0
             ;;
+            --without-starting)
+                option_without_starting=1
+            ;;
         esac
     done
 }
@@ -449,20 +452,22 @@ main ()
     sed -i "s/private_key_file.*$/private_key_file=\/etc\/gameap-daemon\/certs\/server\.key/" /etc/gameap-daemon/gameap-daemon.cfg
     sed -i "s/dh_file.*$/dh_file=\/etc\/gameap-daemon\/certs\/dh2048\.pem/" /etc/gameap-daemon/gameap-daemon.cfg
 
-    echo "Starting GameAP Daemon..."
+    if [[ -z "${option_without_starting:-}" ]]; then
+        echo "Starting GameAP Daemon..."
 
-    if ! /etc/init.d/gameap-daemon start; then
-        echo "Unable to start gameap-daemon service" >> /dev/stderr
-        exit 1
-    fi
+        if ! /etc/init.d/gameap-daemon start; then
+            echo "Unable to start gameap-daemon service" >> /dev/stderr
+            exit 1
+        fi
 
-    if command -v firewall-cmd > /dev/null; then
-        firewall-cmd --zone=public --add-port=31717/tcp --permanent
-        firewall-cmd --reload
-    fi
+        if command -v firewall-cmd > /dev/null; then
+            firewall-cmd --zone=public --add-port=31717/tcp --permanent
+            firewall-cmd --reload
+        fi
 
-    if command -v systemctl 2>/dev/null; then
-      systemctl enable gameap-daemon
+        if command -v systemctl 2>/dev/null; then
+          systemctl enable gameap-daemon
+        fi
     fi
 
     echo "Success"

@@ -4,6 +4,8 @@ set -u
 set -e
 shopt -s dotglob
 
+export DAEMON_SETUP_TOKEN=test_auto_setup_token
+
 detect_os ()
 {
     os=""
@@ -102,10 +104,8 @@ curl -sL -w "HTTP CODE: %{http_code}\\n" "http://test.gameap/login" -o /dev/null
 echo
 echo "Checking GameAP Daemon installation"
 
-echo "Illuminate\Support\Facades\Cache::put('gdaemonAutoCreateToken', 'fake', 1800);" | /var/www/gameap/artisan tinker
-
 if [[ ${os} == "debian" ]] || [[ ${os} == "ubuntu" ]]; then
-    export createToken=fake; export panelHost=http://test.gameap; ./debian/install-gdaemon-en.sh
+    export createToken=test_auto_setup_token; export panelHost=http://test.gameap; ./debian/install-gdaemon-en.sh
 elif [[ ${os} == "centos" ]]; then
-    export createToken=fake; export panelHost=http://test.gameap; ./centos/install-gdaemon-en.sh
+    export createToken=test_auto_setup_token; export panelHost=http://test.gameap; ./centos/install-gdaemon-en.sh
 fi
