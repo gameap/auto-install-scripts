@@ -105,7 +105,24 @@ echo
 echo "Checking GameAP Daemon installation"
 
 if [[ ${os} == "debian" ]] || [[ ${os} == "ubuntu" ]]; then
-    export createToken=test_auto_setup_token; export panelHost=http://test.gameap; ./debian/install-gdaemon-en.sh
+    daemon_install_command="export createToken=test_auto_setup_token; export panelHost=http://test.gameap; ./debian/install-gdaemon-en.sh"
 elif [[ ${os} == "centos" ]]; then
-    export createToken=test_auto_setup_token; export panelHost=http://test.gameap; ./centos/install-gdaemon-en.sh
+    daemon_install_command="createToken=test_auto_setup_token; export panelHost=http://test.gameap; ./centos/install-gdaemon-en.sh"
+else
+    echo "Unknown os"
+    exit 1
+fi
+
+if ! $(daemon_install_command); then
+    echo "Unable to install gameap-daemon"
+
+    if [[ -f /tmp/gameap-response-create-ds.log ]]; then
+        echo
+        echo "Showing gameap create ds respoonse log:"
+        echo
+        cat /tmp/gameap-response-create-ds.log
+        echo
+    fi
+
+    exit 1
 fi
