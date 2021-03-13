@@ -115,9 +115,6 @@ fi
 
 echo "Illuminate\Support\Facades\Cache::put('gdaemonAutoCreateToken', 'test_auto_setup_token', 99999);" | /var/www/gameap/artisan tinker || true
 
-export createToken=test_auto_setup_token # Deprecated name
-export panelHost=http://test.gameap;     # Deprecated name
-
 export CREATE_TOKEN=test_auto_setup_token
 export PANEL_HOST=http://test.gameap;
 
