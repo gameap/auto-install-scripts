@@ -309,6 +309,16 @@ php_packages_check ()
     echo "Checking for PHP..."
 
     echo
+    echo "Checking for PHP 8.0 version available..."
+
+    if [[ ! -z "$(apt-cache policy php | grep 8.0)" ]]; then
+        echo "PHP 8.0 available"
+        php_version="8.0"
+        return
+    fi
+    echo "PHP 8.0 not available..."
+
+    echo
     echo "Checking for PHP 7.4 version available..."
 
     if [[ ! -z "$(apt-cache policy php | grep 7.4)" ]]; then
@@ -327,16 +337,6 @@ php_packages_check ()
         return
     fi
     echo "PHP 7.3 not available..."
-    
-    echo
-    echo "Checking for PHP 7.2 version available..."
-
-    if [[ ! -z "$(apt-cache policy php | grep 7.2)" ]]; then
-        echo "PHP 7.2 available"
-        php_version="7.2"
-        return
-    fi
-    echo "PHP 7.2 not available..."
 
     if [[ -z $not_repo ]]; then
         echo
@@ -797,7 +797,7 @@ main ()
     php_packages_check
 
     if [[ -z "${php_version}" ]]; then
-        echo "Unable to find PHP >= 7.2" >> /dev/stderr
+        echo "Unable to find PHP >= 7.3" >> /dev/stderr
         exit 1
     fi
 

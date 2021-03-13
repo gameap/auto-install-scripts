@@ -269,6 +269,26 @@ php_packages_check ()
     echo "Checking for PHP..."
 
     echo
+    echo "Checking for PHP 8.0 version available..."
+
+    if yum --showduplicates list php74 &> /dev/null; then
+        echo "PHP 8.0 available"
+        php_version="80"
+
+        if [[ ${dist} == "8" ]]; then
+            yum module disable php:remi-7.2 -y &> /dev/null
+            yum module disable php:remi-7.3 -y &> /dev/null
+            yum module enable php:remi-7.4 -y &> /dev/null
+        else
+            yum-config-manager --disable remi-php54 &> /dev/null
+            yum-config-manager --enable remi-php${php_version} &> /dev/null
+        fi
+
+        return
+    fi
+    echo "PHP 8.0 not available..."
+
+    echo
     echo "Checking for PHP 7.4 version available..."
 
     if yum --showduplicates list php74 &> /dev/null; then
@@ -306,22 +326,6 @@ php_packages_check ()
         return
     fi
     echo "PHP 7.3 not available..."
-    
-    echo
-    echo "Checking for PHP 7.2 version available..."
-
-    if yum --showduplicates list php72 &> /dev/null; then
-        echo "PHP 7.2 available"
-        php_version="72"
-
-        if [[ ${dist} != "8" ]]; then
-            yum-config-manager --disable remi-php54 &> /dev/null
-            yum-config-manager --enable remi-php${php_version} &> /dev/null
-        fi
-
-        return
-    fi
-    echo "PHP 7.2 not available..."
 
     if [[ -z ${not_repo} ]]; then
         echo
@@ -784,7 +788,7 @@ main ()
     php_packages_check
 
     if [[ -z "${php_version}" ]]; then
-        echo "Unable to find PHP >= 7.2" >> /dev/stderr
+        echo "Unable to find PHP >= 7.3" >> /dev/stderr
         exit 1
     fi
 

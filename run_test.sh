@@ -4,6 +4,8 @@ set -u
 set -e
 shopt -s dotglob
 
+[[ "${DEBUG:-}" == 'true' ]] && set -x
+
 detect_os ()
 {
     os=""
@@ -102,10 +104,30 @@ curl -sL -w "HTTP CODE: %{http_code}\\n" "http://test.gameap/login" -o /dev/null
 echo
 echo "Checking GameAP Daemon installation"
 
-echo "Illuminate\Support\Facades\Cache::put('gdaemonAutoCreateToken', 'fake', 1800);" | /var/www/gameap/artisan tinker
-
 if [[ ${os} == "debian" ]] || [[ ${os} == "ubuntu" ]]; then
-    export createToken=fake; export panelHost=http://test.gameap; ./debian/install-gdaemon-en.sh
+    daemon_install_command="./debian/install-gdaemon-en.sh"
 elif [[ ${os} == "centos" ]]; then
-    export createToken=fake; export panelHost=http://test.gameap; ./centos/install-gdaemon-en.sh
+    daemon_install_command="./centos/install-gdaemon-en.sh"
+else
+    echo "Unknown os"
+    exit 1
+fi
+
+echo "Illuminate\Support\Facades\Cache::put('gdaemonAutoCreateToken', 'test_auto_setup_token', 99999);" | /var/www/gameap/artisan tinker || true
+
+export CREATE_TOKEN=test_auto_setup_token
+export PANEL_HOST=http://test.gameap;
+
+if ! ${daemon_install_command}; then
+    echo "Unable to install gameap-daemon"
+
+    if [[ -f /tmp/gameap-response-create-ds.log ]]; then
+        echo
+        echo "Showing gameap create ds respoonse log:"
+        echo
+        cat /tmp/gameap-response-create-ds.log
+        echo
+    fi
+
+    exit 1
 fi

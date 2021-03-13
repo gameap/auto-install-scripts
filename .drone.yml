@@ -183,26 +183,12 @@ steps:
 
 ---
 kind: pipeline
-name: debian-jessie-nginx-sqlite
+name: debian-stretch-pseudo-ovz
 type: docker
 
 steps:
   - name: build
-    image: debian:jessie
-    environment:
-      WEB_SERVER: nginx
-      DATABASE: sqlite
-    commands:
-      - ./run_test.sh
-
----
-kind: pipeline
-name: debian-jessie-pseudo-ovz
-type: docker
-
-steps:
-  - name: build
-    image: debian:jessie
+    image: debian:stretch
     environment:
       WEB_SERVER: apache
       DATABASE: mysql
