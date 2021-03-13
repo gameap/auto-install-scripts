@@ -22,6 +22,27 @@ parse_options ()
     done
 }
 
+_check_env_variables()
+{
+    if [[ -z ${CREATE_TOKEN:-} ]]; then
+        if [[ -z ${createToken:-} ]]; then
+            echo "Empty create token" >> /dev/stderr
+            exit 1
+        fi
+
+        CREATE_TOKEN=${createToken}
+    fi
+
+    if [[ -z ${PANEL_HOST:-} ]]; then
+        if [[ -z ${panelHost:-} ]]; then
+            echo "Empty panel host" >> /dev/stderr
+            exit 1
+        fi
+
+        PANEL_HOST=${panelHost}
+    fi
+}
+
 show_help ()
 {
     echo
@@ -285,6 +306,8 @@ function version {
 
 main ()
 {
+    _check_env_variables
+
     detect_os
 
     update_packages_list
@@ -339,7 +362,7 @@ main ()
     install_packages gameap-daemon openssl unzip xz
     generate_certs
 
-    if [[ -n "${createToken}" ]]; then
+    if [[ -n "${CREATE_TOKEN}" ]]; then
         declare -a ds_ip_list
         get_ds_data
 
@@ -399,7 +422,7 @@ main ()
           -F "gdaemon_host=${gdaemon_host}" \
           -F "gdaemon_port=31717" \
           -F "gdaemon_server_cert=@/etc/gameap-daemon/certs/server.csr" \
-          ${panelHost}/gdaemon/create/${createToken}) &> /dev/null
+          ${PANEL_HOST}/gdaemon/create/${CREATE_TOKEN}) &> /dev/null
 
         if [[ "$?" -ne "0" ]]; then
             echo "Unable to insert dedicated server" >> /dev/stderr
@@ -429,7 +452,7 @@ main ()
             echo "$serverCertificate" > /etc/gameap-daemon/certs/server.crt
 
             if ! sed -i "s/ds_id.*$/ds_id=${dedicated_server_id}/" /etc/gameap-daemon/gameap-daemon.cfg \
-                || ! sed -i "s/api_host.*$/api_host=${panelHost##*/}/" /etc/gameap-daemon/gameap-daemon.cfg \
+                || ! sed -i "s/api_host.*$/api_host=${PANEL_HOST##*/}/" /etc/gameap-daemon/gameap-daemon.cfg \
                 || ! sed -i "s/api_key.*$/api_key=${api_key}/" /etc/gameap-daemon/gameap-daemon.cfg \
                 || ! sed -i "s/ca_certificate_file.*$/ca_certificate_file=\/etc\/gameap-daemon\/certs\/ca\.crt/" /etc/gameap-daemon/gameap-daemon.cfg; then
 
