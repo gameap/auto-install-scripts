@@ -4,6 +4,8 @@ set -u
 set -e
 shopt -s dotglob
 
+[[ "${DEBUG:-}" == 'true' ]] && set -x
+
 export DAEMON_SETUP_TOKEN=test_auto_setup_token
 
 detect_os ()

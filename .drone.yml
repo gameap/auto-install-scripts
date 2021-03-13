@@ -9,6 +9,7 @@ steps:
       WEB_SERVER: nginx
       DATABASE: mysql
       DAEMON_SETUP_TOKEN: test_auto_setup_token
+      DEBUG: true
     commands:
       - ./run_test.sh
 
