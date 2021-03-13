@@ -113,6 +113,12 @@ else
     exit 1
 fi
 
+if ! echo "Illuminate\Support\Facades\Cache::put('gdaemonAutoCreateToken', 'test_auto_setup_token', 99999);" | /var/www/gameap/artisan tinker; then
+    echo "Failed to set auto setup token"
+    ./artisan --version
+    exit 1
+fi
+
 export createToken=test_auto_setup_token
 export panelHost=http://test.gameap;
 
