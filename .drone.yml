@@ -8,6 +8,7 @@ steps:
     environment:
       WEB_SERVER: nginx
       DATABASE: mysql
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -22,6 +23,7 @@ steps:
     environment:
       WEB_SERVER: apache
       DATABASE: mysql
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -36,6 +38,7 @@ steps:
     environment:
       WEB_SERVER: nginx
       DATABASE: mysql
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -50,6 +53,7 @@ steps:
     environment:
       WEB_SERVER: apache
       DATABASE: mysql
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -64,6 +68,7 @@ steps:
     environment:
       WEB_SERVER: nginx
       DATABASE: sqlite
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -78,6 +83,7 @@ steps:
     environment:
       WEB_SERVER: apache
       DATABASE: sqlite
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -93,6 +99,7 @@ steps:
     environment:
       WEB_SERVER: nginx
       DATABASE: mysql
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -108,6 +115,7 @@ steps:
     environment:
       WEB_SERVER: apache
       DATABASE: mysql
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -122,6 +130,7 @@ steps:
     environment:
       WEB_SERVER: nginx
       DATABASE: mysql
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -136,6 +145,7 @@ steps:
     environment:
       WEB_SERVER: apache
       DATABASE: mysql
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -150,6 +160,7 @@ steps:
     environment:
       WEB_SERVER: nginx
       DATABASE: sqlite
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -164,6 +175,7 @@ steps:
     environment:
       WEB_SERVER: apache
       DATABASE: sqlite
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -178,6 +190,7 @@ steps:
     environment:
       WEB_SERVER: apache
       DATABASE: mysql
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -192,6 +205,7 @@ steps:
     environment:
       WEB_SERVER: nginx
       DATABASE: sqlite
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - ./run_test.sh
 
@@ -206,6 +220,7 @@ steps:
     environment:
       WEB_SERVER: apache
       DATABASE: mysql
+      DAEMON_SETUP_TOKEN: test_auto_setup_token
     commands:
       - mv /bin/uname /bin/original_uname
       - echo "echo 'Linux vps5785664248 2.6.32-042stab127.2 \#1 SMP Thu Jan 4 16:41:44 MSK 2018 x86_64 GNU/Linux'" > /bin/uname
