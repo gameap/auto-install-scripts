@@ -115,7 +115,7 @@ else
     exit 1
 fi
 
-echo "Illuminate\Support\Facades\Cache::put('gdaemonAutoCreateToken', 'fake', 99999);" | /var/www/gameap/artisan tinker || true
+echo "Illuminate\Support\Facades\Cache::put('gdaemonAutoCreateToken', 'test_auto_setup_token', 99999);" | /var/www/gameap/artisan tinker || true
 
 export createToken=test_auto_setup_token
 export panelHost=http://test.gameap;
