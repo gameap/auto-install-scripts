@@ -113,7 +113,7 @@ else
     exit 1
 fi
 
-if ! $(daemon_install_command); then
+if ! ${daemon_install_command}; then
     echo "Unable to install gameap-daemon"
 
     if [[ -f /tmp/gameap-response-create-ds.log ]]; then
