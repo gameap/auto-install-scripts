@@ -345,7 +345,7 @@ install_from_github ()
     
     echo
     echo "Installing NodeJS..."
-    curl -sL https://rpm.nodesource.com/setup_10.x | sudo -E bash - &> /dev/null
+    curl -sL https://rpm.nodesource.com/setup_15.x | sudo -E bash - &> /dev/null
     install_packages nodejs
     echo "done"
 
