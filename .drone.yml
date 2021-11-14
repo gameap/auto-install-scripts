@@ -1,4 +1,18 @@
 kind: pipeline
+name: debian-bullseye-nginx-mysql
+type: docker
+
+steps:
+  - name: build
+    image: debian:bullseye
+    environment:
+      WEB_SERVER: nginx
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+kind: pipeline
 name: debian-buster-nginx-mysql
 type: docker
 
