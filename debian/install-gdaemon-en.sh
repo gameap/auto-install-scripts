@@ -157,6 +157,7 @@ detect_os ()
             9* ) dist="stretch" ;;
             10* ) dist="buster" ;;
             11* ) dist="bullseye" ;;
+            12* ) dist="bookworm" ;;
         esac
     fi
 
@@ -220,7 +221,7 @@ steamcmd_install ()
     fi
 
     if [[ $(getconf LONG_BIT) == "64" ]]; then
-        install_packages lib32gcc1 lib32stdc++6
+        lib32install
     fi
 
     cd /srv/gameap/steamcmd || return
@@ -242,6 +243,21 @@ steamcmd_install ()
     fi
 
     rm steamcmd_linux.tar.gz
+}
+
+lib32install ()
+{
+    if [[ "${os}" = "debian" ]]; then
+        if [[ "${dist}" = "bullseye" ]]; then
+            install_packages lib32gcc-s1 lib32stdc++6
+        elif [[ "${dist}" = "bookworm" ]]; then
+            install_packages lib32gcc-s1 lib32stdc++6
+        else
+            install_packages lib32gcc1 lib32stdc++6
+        fi
+    else
+        install_packages lib32gcc1 lib32stdc++6
+    fi
 }
 
 generate_certs ()
@@ -354,6 +370,17 @@ is_ipv6 ()
     return 1
 }
 
+_groupadd ()
+{
+    group=$1
+
+    if command -v groupadd > /dev/null; then
+        groupadd ${group}
+    elif command -v /usr/sbin/groupadd > /dev/null; then
+        /usr/sbin/groupadd ${group}
+    fi
+}
+
 main ()
 {
     _check_env_variables
@@ -376,7 +403,7 @@ main ()
     fi
 
     if [[ -z "$(getent group gameap)" ]]; then
-        groupadd "gameap"
+        _groupadd "gameap"
 
         if [[ "$?" -ne "0" ]]; then
             echo "Unable to add group" >> /dev/stderr
