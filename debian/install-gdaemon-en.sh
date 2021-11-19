@@ -210,7 +210,7 @@ install_gameap_daemon ()
         fi
     fi
 
-    if ! curl -qL "https://raw.githubusercontent.com/gameap/daemon/master/config/gameap-daemon.cfg"; then
+    if ! curl -qL "https://raw.githubusercontent.com/gameap/daemon/master/config/gameap-daemon.cfg" -o gameap-daemon.cfg; then
         echo "Unable to download gameap-daemon configuration" >> /dev/stderr
         exit 1
     fi
