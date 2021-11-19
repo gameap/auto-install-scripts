@@ -188,13 +188,8 @@ install_gameap_daemon ()
 
     chmod +x gameap-daemon
 
-    if ! curl -qL "https://packages.gameap.ru/gameap-daemon/systemd-service.tar.gz"; then
-        echo "Unable to download systemd configuration" >> /dev/stderr
-        exit 1
-    fi
-
     if command -v systemctl 2>/dev/null; then
-        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/systemd-service.tar.gz"; then
+        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/systemd-service.tar.gz" -o systemd-service.tar.gz; then
             echo "Unable to download systemd configuration" >> /dev/stderr
             exit 1
         fi
@@ -204,7 +199,7 @@ install_gameap_daemon ()
             exit 1
         fi
     else
-        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/initrd-script-debian.tar.gz"; then
+        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/initrd-script-debian.tar.gz" -o initrd-script-debian.tar.gz; then
             echo "Unable to download initrd scripts configuration" >> /dev/stderr
             exit 1
         fi
