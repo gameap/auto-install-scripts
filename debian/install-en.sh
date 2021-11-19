@@ -544,6 +544,26 @@ cron_setup ()
     rm gameap_cron
 }
 
+mysql_service_start ()
+{
+    if ! service mysql start; then
+        if ! service mariadb start; then
+            echo "Failed to start mysql/mariadb" >> /dev/stderr
+            exit 1
+        fi
+    fi
+}
+
+mysql_service_restart ()
+{
+    if ! service mysql restart; then
+        if ! service mariadb restart; then
+            echo "Failed to restart mysql/mariadb" >> /dev/stderr
+            exit 1
+        fi
+    fi
+}
+
 mysql_setup ()
 {
     if command -v mysqld > /dev/null; then
@@ -557,7 +577,7 @@ mysql_setup ()
 
         ask_mysql_credentials
 
-        until mysql -u ${database_user_name} -p${database_user_password} -e ";" ; do
+        until mysql -h ${database_hostname} -u ${database_user_name} -p${database_user_password} -e ";" ; do
             echo
             echo "Can't connect to MySQL. Invalid credentials. Please retry"
 
@@ -574,7 +594,7 @@ mysql_setup ()
         install_packages "$(get_package_name mysql)"
         unset mysql_package
 
-        service mysql start
+        mysql_service_start
 
         mysql -u root -e 'CREATE DATABASE IF NOT EXISTS `gameap`' &> /dev/null
         if [[ "$?" -ne "0" ]]; then echo "Unable to create database. MySQL seting up failed." >> /dev/stderr; exit 1; fi
@@ -591,7 +611,7 @@ mysql_setup ()
 
         if [[ "$?" -ne "0" ]]; then echo "Unable to set database root password. MySQL seting up failed." >> /dev/stderr; exit 1; fi
 
-        service mysql restart
+        mysql_service_restart
 
         mysql -u root -p${database_root_password} -e "USE mysql;\
             CREATE USER '${database_user_name}'@'%' IDENTIFIED BY '${database_user_password}';\
@@ -762,6 +782,7 @@ ask_user ()
 
 ask_mysql_credentials ()
 {
+    read -p "Enter DB host: " database_hostname
     read -p "Enter DB username: " database_user_name
     read -p "Enter DB password: " database_user_password
     read -p "Enter DB name: " database_name

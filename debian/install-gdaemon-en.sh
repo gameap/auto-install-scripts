@@ -172,6 +172,71 @@ detect_os ()
     echo "Detected operating system as $os/$dist."
 }
 
+install_gameap_daemon ()
+{
+    cd "$(mktemp -d)" || (echo "failed to make temp directory"; exit)
+
+    if ! curl -qL "https://packages.gameap.ru/gameap-daemon/download-release?os=linux&arch=$(arch)" -o gameap-daemon.tar.gz; then
+        echo "Unable to download gameap-daemon" >> /dev/stderr
+        exit 1
+    fi
+
+    if ! tar -xvf gameap-daemon.tar.gz; then
+        echo "Unable to unpack gameap-daemon archive" >> /dev/stderr
+        exit 1
+    fi
+
+    chmod +x gameap-daemon
+
+    if ! curl -qL "https://packages.gameap.ru/gameap-daemon/systemd-service.tar.gz"; then
+        echo "Unable to download systemd configuration" >> /dev/stderr
+        exit 1
+    fi
+
+    if command -v systemctl 2>/dev/null; then
+        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/systemd-service.tar.gz"; then
+            echo "Unable to download systemd configuration" >> /dev/stderr
+            exit 1
+        fi
+
+        if ! tar -xvf systemd-service.tar.gz; then
+            echo "Unable to unpack systemd configuration" >> /dev/stderr
+            exit 1
+        fi
+    else
+        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/initrd-script-debian.tar.gz"; then
+            echo "Unable to download initrd scripts configuration" >> /dev/stderr
+            exit 1
+        fi
+
+        if ! tar -xvf initrd-script-debian.tar.gz; then
+            echo "Unable to unpack initrd scripts configuration" >> /dev/stderr
+            exit 1
+        fi
+    fi
+
+    if ! curl -qL "https://raw.githubusercontent.com/gameap/daemon/master/config/gameap-daemon.cfg"; then
+        echo "Unable to download gameap-daemon configuration" >> /dev/stderr
+        exit 1
+    fi
+
+    mkdir -p /etc/gameap-daemon
+
+    cp gameap-daemon /usr/bin/gameap-daemon
+    cp gameap-daemon.cfg /etc/gameap-daemon/gameap-daemon.cfg
+
+    if command -v systemctl 2>/dev/null; then
+        cp gameap-daemon.service /etc/systemd/system/gameap-daemon.service
+        if ! systemctl daemon-reload; then
+            echo "Unable to daemon-reload" >> /dev/stderr
+            exit 1
+        fi
+    else
+        cp ./default/gameap-daemon /etc/default/gameap-daemon
+        cp ./init.d/gameap-daemon /etc/init.d/gameap-daemon
+    fi
+}
+
 gpg_check ()
 {
     echo
@@ -180,8 +245,7 @@ gpg_check ()
         echo "Detected gpg..."
     else
         echo "Installing gnupg for GPG verification..."
-        apt-get install -y gnupg
-        if [[ "$?" -ne "0" ]]; then
+        if ! apt-get install -y gnupg; then
             echo "Unable to install GPG! Your base system has a problem; please check your default OS's package repositories because GPG should work." >> /dev/stderr
             echo "Repository installation aborted." >> /dev/stderr
             exit 1
@@ -198,8 +262,7 @@ curl_check ()
         echo "Detected curl..."
     else
         echo "Installing curl..."
-        apt-get install -q -y curl
-        if [[ "$?" -ne "0" ]]; then
+        if ! apt-get install -q -y curl; then
             echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work." >> /dev/stderr
             echo "Repository installation aborted." >> /dev/stderr
             exit 1
@@ -313,7 +376,7 @@ get_ds_data ()
         fi
     done
 
-    hosts=(ifconfig.es/country ifconfig.co/country ipinfo.io/country)
+    hosts=(ifconfig.co/country ipinfo.io/country ifconfig.es/country)
     ds_location="Unknown"
     for host in ${hosts[*]}; do
         result=$(curl -qL ${host}) &> /dev/null
@@ -437,8 +500,10 @@ main ()
         exit 1
     fi
 
-    install_packages gameap-daemon openssl unzip xz-utils
+    install_packages openssl unzip xz-utils
     generate_certs
+
+    install_gameap_daemon
 
     if [[ -n "${CREATE_TOKEN}" ]]; then
         declare -a ds_ip_list
@@ -578,7 +643,7 @@ main ()
         fi
 
         if command -v systemctl 2>/dev/null; then
-          systemctl enable gameap-daemon
+            systemctl enable gameap-daemon
         fi
     fi
 
