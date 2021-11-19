@@ -99,9 +99,7 @@ install_packages ()
 add_gpg_key ()
 {
     gpg_key_url=$1
-    curl -SfL "${gpg_key_url}" > /dev/null 2>&1 | apt-key add - &>/dev/null
-
-    if [[ "$?" -ne "0" ]]; then
+    if ! curl -SfL "${gpg_key_url}" 2> /dev/null | apt-key add - &>/dev/null; then
       echo "Unable to add GPG key!" >> /dev/stderr
       exit 1
     fi
