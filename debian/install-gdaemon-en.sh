@@ -240,6 +240,8 @@ install_gameap_daemon ()
     else
         cp ./default/gameap-daemon /etc/default/gameap-daemon
         cp ./init.d/gameap-daemon /etc/init.d/gameap-daemon
+
+        echo "DAEMON=\"/usr/bin/gameap-daemon\"" >> /etc/default/gameap-daemon
     fi
 }
 
