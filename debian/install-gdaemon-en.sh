@@ -43,6 +43,19 @@ _check_env_variables()
     fi
 }
 
+_check_systemd()
+{
+    if ! command -v systemctl > /dev/null 2>&1; then
+        return 1
+    fi
+
+    if ! systemctl daemon-reload >/dev/null 2>&1; then
+        return 1
+    fi
+
+    return 0
+}
+
 show_help ()
 {
     echo
@@ -86,7 +99,7 @@ install_packages ()
 add_gpg_key ()
 {
     gpg_key_url=$1
-    curl -SfL "${gpg_key_url}" 2> /dev/null | apt-key add - &>/dev/null
+    curl -SfL "${gpg_key_url}" > /dev/null 2>&1 | apt-key add - &>/dev/null
 
     if [[ "$?" -ne "0" ]]; then
       echo "Unable to add GPG key!" >> /dev/stderr
@@ -130,7 +143,7 @@ detect_os ()
             dist=${VERSION_ID:-}
         fi
 
-    elif [[ -n "$(command -v lsb_release 2>/dev/null)" ]]; then
+    elif [[ -n "$(command -v lsb_release > /dev/null 2>&1)" ]]; then
         dist=$(lsb_release -c | cut -f2)
         os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
 
@@ -188,7 +201,7 @@ install_gameap_daemon ()
 
     chmod +x gameap-daemon
 
-    if command -v systemctl 2>/dev/null; then
+    if _check_systemd; then
         if ! curl -qL "https://packages.gameap.ru/gameap-daemon/systemd-service.tar.gz" -o systemd-service.tar.gz; then
             echo "Unable to download systemd configuration" >> /dev/stderr
             exit 1
@@ -220,7 +233,7 @@ install_gameap_daemon ()
     cp gameap-daemon /usr/bin/gameap-daemon
     cp gameap-daemon.cfg /etc/gameap-daemon/gameap-daemon.cfg
 
-    if command -v systemctl 2>/dev/null; then
+    if _check_systemd; then
         cp gameap-daemon.service /etc/systemd/system/gameap-daemon.service
         if ! systemctl daemon-reload; then
             echo "Unable to daemon-reload" >> /dev/stderr
@@ -637,7 +650,7 @@ main ()
             exit 1
         fi
 
-        if command -v systemctl 2>/dev/null; then
+        if _check_systemd; then
             systemctl enable gameap-daemon
         fi
     fi
