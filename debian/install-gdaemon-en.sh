@@ -641,6 +641,7 @@ main ()
     sed -i "s/certificate_chain_file.*$/certificate_chain_file=\/etc\/gameap-daemon\/certs\/server\.crt/" /etc/gameap-daemon/gameap-daemon.cfg
     sed -i "s/private_key_file.*$/private_key_file=\/etc\/gameap-daemon\/certs\/server\.key/" /etc/gameap-daemon/gameap-daemon.cfg
     sed -i "s/dh_file.*$/dh_file=\/etc\/gameap-daemon\/certs\/dh2048\.pem/" /etc/gameap-daemon/gameap-daemon.cfg
+    sed -i "s/.output_log.*$/output_log=\/var\/log\/gameap-daemon\/output\.log/" /etc/gameap-daemon/gameap-daemon.cfg
 
     if [[ -z "${option_without_starting:-}" ]]; then
         echo "Starting GameAP Daemon..."
