@@ -226,10 +226,18 @@ install_gameap_daemon ()
         exit 1
     fi
 
+    if ! curl -qL "https://raw.githubusercontent.com/gameap/scripts/master/process-manager/screen/runner.sh" -o runner.sh; then
+        echo "Unable to download gameap-daemon configuration" >> /dev/stderr
+        exit 1
+    fi
+
     mkdir -p /etc/gameap-daemon
 
     cp gameap-daemon /usr/bin/gameap-daemon
     cp gameap-daemon.cfg /etc/gameap-daemon/gameap-daemon.cfg
+
+    cp runner.sh /srv/gameap/runner.sh
+    chmod +x /srv/gameap/runner.sh
 
     if _check_systemd; then
         cp gameap-daemon.service /etc/systemd/system/gameap-daemon.service
@@ -243,6 +251,8 @@ install_gameap_daemon ()
 
         echo "DAEMON=\"/usr/bin/gameap-daemon\"" >> /etc/default/gameap-daemon
     fi
+
+    install_packages tmux screen
 }
 
 gpg_check ()
