@@ -43,6 +43,19 @@ _check_env_variables()
     fi
 }
 
+_check_systemd()
+{
+    if ! command -v systemctl > /dev/null 2>&1; then
+        return 1
+    fi
+
+    if ! systemctl daemon-reload >/dev/null 2>&1; then
+        return 1
+    fi
+
+    return 0
+}
+
 show_help ()
 {
     echo
@@ -86,9 +99,7 @@ install_packages ()
 add_gpg_key ()
 {
     gpg_key_url=$1
-    curl -SfL "${gpg_key_url}" 2> /dev/null | apt-key add - &>/dev/null
-
-    if [[ "$?" -ne "0" ]]; then
+    if ! curl -SfL "${gpg_key_url}" 2> /dev/null | apt-key add - &>/dev/null; then
       echo "Unable to add GPG key!" >> /dev/stderr
       exit 1
     fi
@@ -130,7 +141,7 @@ detect_os ()
             dist=${VERSION_ID:-}
         fi
 
-    elif [[ -n "$(command -v lsb_release 2>/dev/null)" ]]; then
+    elif [[ -n "$(command -v lsb_release > /dev/null 2>&1)" ]]; then
         dist=$(lsb_release -c | cut -f2)
         os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
 
@@ -172,6 +183,68 @@ detect_os ()
     echo "Detected operating system as $os/$dist."
 }
 
+install_gameap_daemon ()
+{
+    cd "$(mktemp -d)" || (echo "failed to make temp directory"; exit)
+
+    if ! curl -qL "https://packages.gameap.ru/gameap-daemon/download-release?os=linux&arch=$(arch)" -o gameap-daemon.tar.gz; then
+        echo "Unable to download gameap-daemon" >> /dev/stderr
+        exit 1
+    fi
+
+    if ! tar -xvf gameap-daemon.tar.gz; then
+        echo "Unable to unpack gameap-daemon archive" >> /dev/stderr
+        exit 1
+    fi
+
+    chmod +x gameap-daemon
+
+    if _check_systemd; then
+        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/systemd-service.tar.gz" -o systemd-service.tar.gz; then
+            echo "Unable to download systemd configuration" >> /dev/stderr
+            exit 1
+        fi
+
+        if ! tar -xvf systemd-service.tar.gz; then
+            echo "Unable to unpack systemd configuration" >> /dev/stderr
+            exit 1
+        fi
+    else
+        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/initrd-script-debian.tar.gz" -o initrd-script-debian.tar.gz; then
+            echo "Unable to download initrd scripts configuration" >> /dev/stderr
+            exit 1
+        fi
+
+        if ! tar -xvf initrd-script-debian.tar.gz; then
+            echo "Unable to unpack initrd scripts configuration" >> /dev/stderr
+            exit 1
+        fi
+    fi
+
+    if ! curl -qL "https://raw.githubusercontent.com/gameap/daemon/master/config/gameap-daemon.cfg" -o gameap-daemon.cfg; then
+        echo "Unable to download gameap-daemon configuration" >> /dev/stderr
+        exit 1
+    fi
+
+    mkdir -p /etc/gameap-daemon
+
+    cp gameap-daemon /usr/bin/gameap-daemon
+    cp gameap-daemon.cfg /etc/gameap-daemon/gameap-daemon.cfg
+
+    if _check_systemd; then
+        cp gameap-daemon.service /etc/systemd/system/gameap-daemon.service
+        if ! systemctl daemon-reload; then
+            echo "Unable to daemon-reload" >> /dev/stderr
+            exit 1
+        fi
+    else
+        cp ./default/gameap-daemon /etc/default/gameap-daemon
+        cp ./init.d/gameap-daemon /etc/init.d/gameap-daemon
+
+        echo "DAEMON=\"/usr/bin/gameap-daemon\"" >> /etc/default/gameap-daemon
+    fi
+}
+
 gpg_check ()
 {
     echo
@@ -180,8 +253,7 @@ gpg_check ()
         echo "Detected gpg..."
     else
         echo "Installing gnupg for GPG verification..."
-        apt-get install -y gnupg
-        if [[ "$?" -ne "0" ]]; then
+        if ! apt-get install -y gnupg; then
             echo "Unable to install GPG! Your base system has a problem; please check your default OS's package repositories because GPG should work." >> /dev/stderr
             echo "Repository installation aborted." >> /dev/stderr
             exit 1
@@ -198,8 +270,7 @@ curl_check ()
         echo "Detected curl..."
     else
         echo "Installing curl..."
-        apt-get install -q -y curl
-        if [[ "$?" -ne "0" ]]; then
+        if ! apt-get install -q -y curl; then
             echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work." >> /dev/stderr
             echo "Repository installation aborted." >> /dev/stderr
             exit 1
@@ -313,7 +384,7 @@ get_ds_data ()
         fi
     done
 
-    hosts=(ifconfig.es/country ifconfig.co/country ipinfo.io/country)
+    hosts=(ifconfig.co/country ipinfo.io/country ifconfig.es/country)
     ds_location="Unknown"
     for host in ${hosts[*]}; do
         result=$(curl -qL ${host}) &> /dev/null
@@ -437,8 +508,10 @@ main ()
         exit 1
     fi
 
-    install_packages gameap-daemon openssl unzip xz-utils
+    install_packages openssl unzip xz-utils
     generate_certs
+
+    install_gameap_daemon
 
     if [[ -n "${CREATE_TOKEN}" ]]; then
         declare -a ds_ip_list
@@ -568,6 +641,7 @@ main ()
     sed -i "s/certificate_chain_file.*$/certificate_chain_file=\/etc\/gameap-daemon\/certs\/server\.crt/" /etc/gameap-daemon/gameap-daemon.cfg
     sed -i "s/private_key_file.*$/private_key_file=\/etc\/gameap-daemon\/certs\/server\.key/" /etc/gameap-daemon/gameap-daemon.cfg
     sed -i "s/dh_file.*$/dh_file=\/etc\/gameap-daemon\/certs\/dh2048\.pem/" /etc/gameap-daemon/gameap-daemon.cfg
+    sed -i "s/.output_log.*$/output_log=\/var\/log\/gameap-daemon\/output\.log/" /etc/gameap-daemon/gameap-daemon.cfg
 
     if [[ -z "${option_without_starting:-}" ]]; then
         echo "Starting GameAP Daemon..."
@@ -577,8 +651,8 @@ main ()
             exit 1
         fi
 
-        if command -v systemctl 2>/dev/null; then
-          systemctl enable gameap-daemon
+        if _check_systemd; then
+            systemctl enable gameap-daemon
         fi
     fi
 
