@@ -187,11 +187,14 @@ install_gameap_daemon ()
 {
     cd "$(mktemp -d)" || (echo "failed to make temp directory"; exit)
 
-    if ! curl -qL "https://packages.gameap.ru/gameap-daemon/download-release?os=linux&arch=$(arch)" -o gameap-daemon.tar.gz; then
+    echo "Downloading gameap-daemon binaries..."
+    if ! curl -qL "https://packages.gameap.ru/gameap-daemon/download-release?os=linux&arch=$(arch)" \
+      -o gameap-daemon.tar.gz > /dev/null 2>&1; then
         echo "Unable to download gameap-daemon" >> /dev/stderr
         exit 1
     fi
 
+    echo "Unpacking gameap-daemon binaries..."
     if ! tar -xvf gameap-daemon.tar.gz; then
         echo "Unable to unpack gameap-daemon archive" >> /dev/stderr
         exit 1
@@ -200,37 +203,48 @@ install_gameap_daemon ()
     chmod +x gameap-daemon
 
     if _check_systemd; then
-        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/systemd-service.tar.gz" -o systemd-service.tar.gz; then
+        echo "Downloading systemd configuration..."
+        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/systemd-service.tar.gz" \
+        -o systemd-service.tar.gz > /dev/null 2>&1; then
             echo "Unable to download systemd configuration" >> /dev/stderr
             exit 1
         fi
 
+        echo "Unpacking systemd configuration..."
         if ! tar -xvf systemd-service.tar.gz; then
             echo "Unable to unpack systemd configuration" >> /dev/stderr
             exit 1
         fi
     else
-        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/initrd-script-debian.tar.gz" -o initrd-script-debian.tar.gz; then
+        echo "Downloading initd configuration..."
+        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/initrd-script-debian.tar.gz" \
+          -o initrd-script-debian.tar.gz > /dev/null 2>&1; then
             echo "Unable to download initrd scripts configuration" >> /dev/stderr
             exit 1
         fi
 
+        echo "Unpacking initd configuration..."
         if ! tar -xvf initrd-script-debian.tar.gz; then
             echo "Unable to unpack initrd scripts configuration" >> /dev/stderr
             exit 1
         fi
     fi
 
-    if ! curl -qL "https://raw.githubusercontent.com/gameap/daemon/master/config/gameap-daemon.cfg" -o gameap-daemon.cfg; then
+    echo "Downloading gameap-daemon configuration..."
+    if ! curl -qL "https://raw.githubusercontent.com/gameap/daemon/master/config/gameap-daemon.cfg" \
+      -o gameap-daemon.cfg > /dev/null 2>&1; then
         echo "Unable to download gameap-daemon configuration" >> /dev/stderr
         exit 1
     fi
 
-    if ! curl -qL "https://raw.githubusercontent.com/gameap/scripts/master/process-manager/screen/runner.sh" -o runner.sh; then
+    echo "Downloading gameap-daemon runner configuration..."
+    if ! curl -qL "https://raw.githubusercontent.com/gameap/scripts/master/process-manager/screen/runner.sh" \
+      -o runner.sh > /dev/null 2>&1; then
         echo "Unable to download gameap-daemon configuration" >> /dev/stderr
         exit 1
     fi
 
+    echo "Copying gameap-daemon files..."
     mkdir -p /etc/gameap-daemon
 
     cp gameap-daemon /usr/bin/gameap-daemon
@@ -240,12 +254,14 @@ install_gameap_daemon ()
     chmod +x /srv/gameap/runner.sh
 
     if _check_systemd; then
+        echo "Copying gameap-daemon systemd configuration..."
         cp gameap-daemon.service /etc/systemd/system/gameap-daemon.service
         if ! systemctl daemon-reload; then
             echo "Unable to daemon-reload" >> /dev/stderr
             exit 1
         fi
     else
+        echo "Copying gameap-daemon initd configuration..."
         cp ./default/gameap-daemon /etc/default/gameap-daemon
         cp ./init.d/gameap-daemon /etc/init.d/gameap-daemon
 
