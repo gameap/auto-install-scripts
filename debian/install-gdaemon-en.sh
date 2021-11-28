@@ -85,7 +85,8 @@ install_packages ()
     echo
     echo -n "Installing ${packages[*]}... "
 
-    if ! apt-get install -y "${packages[*]}" &> /dev/null; then
+    # nolint
+    if ! apt-get install -y ${packages[*]} &> /dev/null; then
         echo "Unable to install ${packages[*]}." >> /dev/stderr
         echo "Package installation aborted." >> /dev/stderr
         exit 1
