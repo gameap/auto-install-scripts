@@ -6,6 +6,8 @@ shopt -s dotglob
 [[ "${DEBUG:-}" == 'true' ]] && set -x
 export DEBIAN_FRONTEND="noninteractive"
 
+declare -a ds_ip_list
+
 parse_options ()
 {
     for i in "$@"
@@ -67,9 +69,7 @@ update_packages_list ()
     echo
     echo -n "Running apt-get update... "
 
-    apt-get update &> /dev/null
-
-    if [[ "$?" -ne "0" ]]; then
+    if ! apt-get update &> /dev/null; then
         echo "Unable to update apt" >> /dev/stderr
         exit 1
     fi
@@ -84,9 +84,8 @@ install_packages ()
 
     echo
     echo -n "Installing ${packages[*]}... "
-    apt-get install -y ${packages[*]} &> /dev/null
 
-    if [[ "$?" -ne "0" ]]; then
+    if ! apt-get install -y "${packages[*]}" &> /dev/null; then
         echo "Unable to install ${packages[*]}." >> /dev/stderr
         echo "Package installation aborted." >> /dev/stderr
         exit 1
@@ -323,17 +322,13 @@ steamcmd_install ()
 
     cd /srv/gameap/steamcmd || return
 
-    curl -O https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
-
-    if [[ "$?" -ne "0" ]]; then
+    if ! curl -O https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz; then
         echo "Unable to download SteamCMD" >> /dev/stderr
         echo "Skipping installation SteamCMD" >> /dev/stderr
         return
     fi
 
-    tar -xvzf steamcmd_linux.tar.gz
-
-    if [[ "$?" -ne "0" ]]; then
+    if ! tar -xvzf steamcmd_linux.tar.gz; then
         echo "Unable to unpack SteamCMD" >> /dev/stderr
         echo "Skipping installation SteamCMD" >> /dev/stderr
         return
@@ -348,7 +343,7 @@ lib32install ()
         if [[ "${dist}" = "bullseye" ]]; then
             install_packages lib32gcc-s1 lib32stdc++6
         elif [[ "${dist}" = "bookworm" ]]; then
-            install_packages lib32gcc-s1 lib32stdc++6
+            install_packages lib32gcc-s1 lib32stdc++6 lib32z1
         else
             install_packages lib32gcc1 lib32stdc++6
         fi
@@ -369,8 +364,7 @@ generate_certs ()
     if [[ -f "server.key" ]]; then
         echo "Server key exists. Skipping..."
     else
-        openssl genrsa -out server.key 2048
-        if [[ "$?" -ne "0" ]]; then
+        if ! openssl genrsa -out server.key 2048; then
             echo "Unable to generate server key" >> /dev/stderr
             exit 1
         fi
@@ -379,19 +373,10 @@ generate_certs ()
     if [[ -f "server.crt" ]]; then
         echo "Server certificate exists. Skipping..."
     else
-        openssl req -new -key server.key -subj "/CN=$(hostname)/O=GameAP Daemon" -out server.csr
-        if [[ "$?" -ne "0" ]]; then
+        if ! openssl req -new -key server.key -subj "/CN=$(hostname)/O=GameAP Daemon" -out server.csr; then
             echo "Unable to generate server certificate" >> /dev/stderr
             exit 1
         fi
-    fi
-
-    if [[ ! -f "dh2048.pem" ]]; then
-      openssl dhparam -out dh2048.pem 2048
-      if [[ "$?" -ne "0" ]]; then
-          echo "Unable to generate DH certificate" >> /dev/stderr
-          exit 1
-      fi
     fi
 }
 
@@ -403,7 +388,7 @@ get_ds_data ()
         result=$(curl -qL ${host}) &> /dev/null
 
         if [[ "$?" -eq "0" ]]; then
-            if is_ipv4 ${result} || is_ipv6 ${result}; then
+            if is_ipv4 "${result}" || is_ipv6 "${result}"; then
                 ds_public_ip=${result}
                 break;
             fi
@@ -424,7 +409,7 @@ get_ds_data ()
     done
 
     if [[ -n $ds_public_ip ]]; then
-        ds_ip_list+=($ds_public_ip)
+        ds_ip_list+=("$ds_public_ip")
     fi
 
     hostnames=$(hostname -I)
@@ -438,7 +423,7 @@ get_ds_data ()
             continue
         fi
 
-        ds_ip_list+=($ip)
+        ds_ip_list+=("$ip")
     done
 }
 
@@ -540,7 +525,6 @@ main ()
     install_gameap_daemon
 
     if [[ -n "${CREATE_TOKEN}" ]]; then
-        declare -a ds_ip_list
         get_ds_data
 
         echo
@@ -570,7 +554,7 @@ main ()
         fi
         
         # OpenVZ compatible
-        if [[ "$(version $(uname -r))" -le "$(version "2.6.32")" ]]; then
+        if [[ "$(version "$(uname -r)")" -le "$(version 2.6.32)" ]]; then
             echo 
             echo "Old kernel detected..."
             echo "Using screen package instead gameap-starter..."
@@ -607,11 +591,11 @@ main ()
           -F "gdaemon_host=${gdaemon_host}" \
           -F "gdaemon_port=31717" \
           -F "gdaemon_server_cert=@/etc/gameap-daemon/certs/server.csr" \
-          ${PANEL_HOST}/gdaemon/create/${CREATE_TOKEN}) &> /dev/null
+          "${PANEL_HOST}"/gdaemon/create/"${CREATE_TOKEN}") &> /dev/null
 
         if [[ "$?" -ne "0" ]]; then
             echo "Curl Result: ${result}"
-            echo "Curl Fields: ${curl_fields[@]}"
+            echo "Curl Fields: " "${curl_fields[@]}"
             echo
 
             echo "Unable to insert dedicated server" >> /dev/stderr
@@ -649,7 +633,7 @@ main ()
                 exit 1
             fi
 
-            if is_ipv6 ${gdaemon_host}; then
+            if is_ipv6 "${gdaemon_host}"; then
                 sed -i "s/listen_ip.*$/listen_ip=::/" /etc/gameap-daemon/gameap-daemon.cfg
             fi
         else
