@@ -144,16 +144,15 @@ detect_os ()
     elif [[ -n "$(command -v lsb_release > /dev/null 2>&1)" ]]; then
         dist=$(lsb_release -c | cut -f2)
         os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
+    fi
 
-    elif [[ -e /etc/debian_version ]]; then
+    if [[ -z "$dist" ]] && [[ -e /etc/debian_version ]]; then
         os=$(cat /etc/issue | head -1 | awk '{ print tolower($1) }')
         if grep -q '/' /etc/debian_version; then
             dist=$(cut --delimiter='/' -f1 /etc/debian_version)
         else
             dist=$(cut --delimiter='.' -f1 /etc/debian_version)
         fi
-    else
-        unknown_os
     fi
 
     if [[ -z "$dist" ]]; then
@@ -574,12 +573,15 @@ main ()
             curl -o $work_dir/server.sh  https://raw.githubusercontent.com/et-nik/gameap-legacy/v1.2-stable/bin/Linux/server.sh
             chmod +x $work_dir/server.sh
 
-            curl_fields+=("-F script_start=./server.sh -t start -d {dir} -n {uuid} -u {user} -c \"{command}\" ")
-            curl_fields+=("-F script_stop=./server.sh -t stop -d {dir} -n {uuid} -u {user} ")
-            curl_fields+=("-F script_restart=./server.sh -t restart -d {dir} -n {uuid} -u {user} -c \"{command}\" ")
-            curl_fields+=("-F script_status=./server.sh -t status -d {dir} -n {uuid} -u {user} ")
-            curl_fields+=("-F script_get_console=./server.sh -t get_console -d {dir} -n {uuid} -u {user} ")
-            curl_fields+=("-F script_send_command=./server.sh -t send_command -d {dir} -n {uuid} -u {user} -c \"{command}\" ")
+            curl_fields+=("-F script_start={node_work_path}/server.sh -t start -d {dir} -n {uuid} -u {user} -c \"{command}\" ")
+            curl_fields+=("-F script_stop={node_work_path}/server.sh -t stop -d {dir} -n {uuid} -u {user} ")
+            curl_fields+=("-F script_restart={node_work_path}/server.sh -t restart -d {dir} -n {uuid} -u {user} -c \"{command}\" ")
+            curl_fields+=("-F script_status={node_work_path}/server.sh -t status -d {dir} -n {uuid} -u {user} ")
+            curl_fields+=("-F script_get_console={node_work_path}/server.sh -t get_console -d {dir} -n {uuid} -u {user} ")
+            curl_fields+=("-F script_send_command={node_work_path}/server.sh -t send_command -d {dir} -n {uuid} -u {user} -c \"{command}\" ")
+        else
+            curl_fields+=("-F script_get_console={node_work_path}/runner.sh get_console -d {dir} -n {uuid} -u {user} ")
+            curl_fields+=("-F script_send_command={node_work_path}/runner.sh send_command -d {dir} -n {uuid} -u {user} -c \"{command}\"")
         fi
 
         result=$(curl -qL \

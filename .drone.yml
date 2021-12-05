@@ -1,4 +1,68 @@
 kind: pipeline
+name: debian-sid-nginx-mysql
+type: docker
+
+steps:
+  - name: build
+    image: debian:sid
+    failure: ignore
+    environment:
+      WEB_SERVER: nginx
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+
+kind: pipeline
+name: debian-sid-apache-mysql
+type: docker
+
+steps:
+  - name: build
+    image: debian:sid
+    failure: ignore
+    environment:
+      WEB_SERVER: apache
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+
+kind: pipeline
+name: debian-bookworm-nginx-mysql
+type: docker
+
+steps:
+  - name: build
+    image: debian:bookworm
+    failure: ignore
+    environment:
+      WEB_SERVER: nginx
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+      -
+---
+
+kind: pipeline
+name: debian-bookworm-apache-mysql
+type: docker
+
+steps:
+  - name: build
+    image: debian:bookworm
+    failure: ignore
+    environment:
+      WEB_SERVER: apache
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+
+kind: pipeline
 name: debian-bullseye-nginx-mysql
 type: docker
 
@@ -10,8 +74,24 @@ steps:
       DATABASE: mysql
     commands:
       - ./run_test.sh
+      -
+---
+
+kind: pipeline
+name: debian-bullseye-apache-mysql
+type: docker
+
+steps:
+  - name: build
+    image: debian:bullseye
+    environment:
+      WEB_SERVER: apache
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
 
 ---
+
 kind: pipeline
 name: debian-buster-nginx-mysql
 type: docker
@@ -26,6 +106,7 @@ steps:
       - ./run_test.sh
 
 ---
+
 kind: pipeline
 name: debian-buster-apache-mysql
 type: docker
@@ -40,6 +121,7 @@ steps:
       - ./run_test.sh
 
 ---
+
 kind: pipeline
 name: debian-stretch-nginx-mysql
 type: docker
@@ -54,6 +136,7 @@ steps:
       - ./run_test.sh
 
 ---
+
 kind: pipeline
 name: debian-stretch-apache-mysql
 type: docker
@@ -68,6 +151,7 @@ steps:
       - ./run_test.sh
 
 ---
+
 kind: pipeline
 name: debian-stretch-nginx-sqlite
 type: docker
@@ -82,6 +166,7 @@ steps:
       - ./run_test.sh
 
 ---
+
 kind: pipeline
 name: debian-stretch-apache-sqlite
 type: docker
@@ -96,6 +181,23 @@ steps:
       - ./run_test.sh
 
 ---
+
+kind: pipeline
+name: ubuntu-impish-nginx-mysql
+type: docker
+
+steps:
+  - name: build
+    image: ubuntu:impish
+    failure: ignore
+    environment:
+      WEB_SERVER: nginx
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+
 kind: pipeline
 name: ubuntu-focal-nginx-mysql
 type: docker
@@ -111,6 +213,7 @@ steps:
       - ./run_test.sh
 
 ---
+
 kind: pipeline
 name: ubuntu-focal-apache-mysql
 type: docker
@@ -126,6 +229,7 @@ steps:
       - ./run_test.sh
 
 ---
+
 kind: pipeline
 name: ubuntu-bionic-nginx-mysql
 type: docker
@@ -140,6 +244,7 @@ steps:
       - ./run_test.sh
 
 ---
+
 kind: pipeline
 name: ubuntu-bionic-apache-mysql
 type: docker
@@ -154,6 +259,7 @@ steps:
       - ./run_test.sh
 
 ---
+
 kind: pipeline
 name: ubuntu-bionic-nginx-sqlite
 type: docker
@@ -168,6 +274,7 @@ steps:
       - ./run_test.sh
 
 ---
+
 kind: pipeline
 name: ubuntu-bionic-apache-sqlite
 type: docker
@@ -182,6 +289,7 @@ steps:
       - ./run_test.sh
 
 ---
+
 kind: pipeline
 name: ubuntu-xenial-nginx-mysql
 type: docker
@@ -197,6 +305,7 @@ steps:
       - ./run_test.sh
 
 ---
+
 kind: pipeline
 name: debian-stretch-pseudo-ovz
 type: docker
