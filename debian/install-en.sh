@@ -160,22 +160,19 @@ detect_os ()
         elif [[ -n "${VERSION_ID:-}" ]]; then
             dist=${VERSION_ID:-}
         fi
-    elif [[ -f /etc/system-release-cpe ]]; then
-        os=$(cut --delimiter=":" -f 3 /etc/system-release-cpe)
-        dist=$(cut --delimiter=":" -f 5 /etc/system-release-cpe)
-    elif [[ -n "$(command -v lsb_release 2>/dev/null)" ]]; then
+
+    elif [[ -n "$(command -v lsb_release > /dev/null 2>&1)" ]]; then
         dist=$(lsb_release -c | cut -f2)
         os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
+    fi
 
-    elif [[ -e /etc/debian_version ]]; then
+    if [[ -z "$dist" ]] && [[ -e /etc/debian_version ]]; then
         os=$(cat /etc/issue | head -1 | awk '{ print tolower($1) }')
         if grep -q '/' /etc/debian_version; then
             dist=$(cut --delimiter='/' -f1 /etc/debian_version)
         else
             dist=$(cut --delimiter='.' -f1 /etc/debian_version)
         fi
-    else
-        unknown_os
     fi
 
     if [[ -z "$dist" ]]; then
@@ -190,6 +187,7 @@ detect_os ()
             9* ) dist="stretch" ;;
             10* ) dist="buster" ;;
             11* ) dist="bullseye" ;;
+            12* ) dist="bookworm" ;;
         esac
     fi
 

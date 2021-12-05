@@ -144,16 +144,15 @@ detect_os ()
     elif [[ -n "$(command -v lsb_release > /dev/null 2>&1)" ]]; then
         dist=$(lsb_release -c | cut -f2)
         os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
+    fi
 
-    elif [[ -e /etc/debian_version ]]; then
+    if [[ -z "$dist" ]] && [[ -e /etc/debian_version ]]; then
         os=$(cat /etc/issue | head -1 | awk '{ print tolower($1) }')
         if grep -q '/' /etc/debian_version; then
             dist=$(cut --delimiter='/' -f1 /etc/debian_version)
         else
             dist=$(cut --delimiter='.' -f1 /etc/debian_version)
         fi
-    else
-        unknown_os
     fi
 
     if [[ -z "$dist" ]]; then
