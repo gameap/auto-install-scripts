@@ -31,6 +31,36 @@ steps:
 ---
 
 kind: pipeline
+name: debian-bookworm-nginx-mysql
+type: docker
+
+steps:
+  - name: build
+    image: debian:bookworm
+    environment:
+      WEB_SERVER: nginx
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+      -
+---
+
+kind: pipeline
+name: debian-bookworm-apache-mysql
+type: docker
+
+steps:
+  - name: build
+    image: debian:bookworm
+    environment:
+      WEB_SERVER: apache
+      DATABASE: mysql
+    commands:
+      - ./run_test.sh
+
+---
+
+kind: pipeline
 name: debian-bullseye-nginx-mysql
 type: docker
 

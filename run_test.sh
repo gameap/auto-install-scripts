@@ -35,10 +35,8 @@ detect_os ()
         elif [[ -n "${VERSION_ID:-}" ]]; then
             dist=${VERSION_ID:-}
         fi
-    elif [[ -f /etc/system-release-cpe ]]; then
-        os=$(cut --delimiter=":" -f 3 /etc/system-release-cpe)
-        dist=$(cut --delimiter=":" -f 5 /etc/system-release-cpe)
-    elif [[ -n "$(command -v lsb_release 2>/dev/null)" ]]; then
+
+    elif [[ -n "$(command -v lsb_release > /dev/null 2>&1)" ]]; then
         dist=$(lsb_release -c | cut -f2)
         os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
 
@@ -65,6 +63,7 @@ detect_os ()
             9* ) dist="stretch" ;;
             10* ) dist="buster" ;;
             11* ) dist="bullseye" ;;
+            12* ) dist="bookworm" ;;
         esac
     fi
 
@@ -75,6 +74,8 @@ detect_os ()
     # lowercase
     os=${os,,}
     dist=${dist,,}
+
+    echo "Detected operating system as $os/$dist."
 }
 
 echo
@@ -131,3 +132,9 @@ if ! ${daemon_install_command}; then
 
     exit 1
 fi
+
+unknown_os ()
+{
+    echo "Unfortunately, your operating system distribution and version are not supported by this script."
+    exit 1
+}
