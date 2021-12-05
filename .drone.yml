@@ -37,6 +37,7 @@ type: docker
 steps:
   - name: build
     image: debian:bookworm
+    failure: ignore
     environment:
       WEB_SERVER: nginx
       DATABASE: mysql
@@ -52,6 +53,7 @@ type: docker
 steps:
   - name: build
     image: debian:bookworm
+    failure: ignore
     environment:
       WEB_SERVER: apache
       DATABASE: mysql
