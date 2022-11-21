@@ -307,6 +307,16 @@ php_packages_check ()
     echo "Checking for PHP..."
 
     echo
+    echo "Checking for PHP 8.1 version available..."
+
+    if [[ ! -z "$(apt-cache policy php | grep 8.1)" ]]; then
+        echo "PHP 8.1 available"
+        php_version="8.1"
+        return
+    fi
+    echo "PHP 8.1 not available..."
+
+    echo
     echo "Checking for PHP 8.0 version available..."
 
     if [[ ! -z "$(apt-cache policy php | grep 8.0)" ]]; then
