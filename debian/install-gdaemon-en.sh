@@ -347,6 +347,12 @@ lib32install ()
         else
             install_packages lib32gcc1 lib32stdc++6
         fi
+    elif [[ "${os}" = "ubuntu" ]]; then
+      if [[ "${dist}" = "jammy" ]]; then
+        install_packages lib32gcc-s1 lib32stdc++6 lib32z1
+      else
+          install_packages lib32gcc1 lib32stdc++6
+      fi
     else
         install_packages lib32gcc1 lib32stdc++6
     fi
