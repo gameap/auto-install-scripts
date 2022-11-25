@@ -475,7 +475,6 @@ main ()
     gpg_check
 
     add_gpg_key "http://packages.gameap.ru/gameap-rep.gpg.key"
-    echo "deb http://packages.gameap.ru/${os}/ ${dist} main" > /etc/apt/sources.list.d/gameap.list
     update_packages_list
     
     work_dir="/srv/gameap"
