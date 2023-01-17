@@ -237,7 +237,7 @@ install_gameap_daemon ()
     fi
 
     echo "Downloading gameap-daemon runner configuration..."
-    if ! curl -qL "https://raw.githubusercontent.com/gameap/scripts/master/process-manager/screen/runner.sh" \
+    if ! curl -qL "https://raw.githubusercontent.com/gameap/scripts/master/process-manager/tmux/runner.sh" \
       -o runner.sh > /dev/null 2>&1; then
         echo "Unable to download gameap-daemon configuration" >> /dev/stderr
         exit 1
