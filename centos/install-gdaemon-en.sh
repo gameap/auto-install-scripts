@@ -264,7 +264,7 @@ install_gameap_daemon ()
         echo "DAEMON=\"/usr/bin/gameap-daemon\"" >> /etc/default/gameap-daemon
     fi
 
-    install_packages tmux screen
+    install_packages tmux
 }
 
 gpg_check ()
@@ -581,7 +581,7 @@ main ()
             curl_fields+=("-F script_send_command={node_work_path}/runner.sh send_command -d {dir} -n {uuid} -u {user} -c \"{command}\"")
         fi
 
-        result=$(curl -qL \
+        result=$(curl -qL --insecure \
           "${curl_fields[@]}" \
           -F "name=${HOSTNAME}" \
           -F "location=${ds_location}" \
