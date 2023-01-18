@@ -6,6 +6,8 @@ shopt -s dotglob
 [[ "${DEBUG:-}" == 'true' ]] && set -x
 export DEBIAN_FRONTEND="noninteractive"
 
+declare -a ds_ip_list
+
 parse_options ()
 {
     for i in "$@"
@@ -43,6 +45,17 @@ _check_env_variables()
     fi
 }
 
+_check_systemd()
+{
+    if ! command -v systemctl > /dev/null 2>&1; then
+        return 1
+    fi
+    if ! systemctl daemon-reload >/dev/null 2>&1; then
+        return 1
+    fi
+    return 0
+}
+
 show_help ()
 {
     echo
@@ -76,6 +89,15 @@ install_packages ()
 
     echo "done."
     echo
+}
+
+add_gpg_key ()
+{
+    gpg_key_url=$1
+    if ! curl -SfL "${gpg_key_url}" 2> /dev/null | apt-key add - &>/dev/null; then
+      echo "Unable to add GPG key!" >> /dev/stderr
+      exit 1
+    fi
 }
 
 unknown_os ()
@@ -157,6 +179,94 @@ detect_os ()
     echo "Detected operating system as $os/$dist."
 }
 
+install_gameap_daemon ()
+{
+    cd "$(mktemp -d)" || (echo "failed to make temp directory"; exit)
+
+    echo "Downloading gameap-daemon binaries..."
+    if ! curl -qL "https://packages.gameap.ru/gameap-daemon/download-release?os=linux&arch=$(arch)" \
+      -o gameap-daemon.tar.gz > /dev/null 2>&1; then
+        echo "Unable to download gameap-daemon" >> /dev/stderr
+        exit 1
+    fi
+
+    echo "Unpacking gameap-daemon binaries..."
+    if ! tar -xvf gameap-daemon.tar.gz; then
+        echo "Unable to unpack gameap-daemon archive" >> /dev/stderr
+        exit 1
+    fi
+
+    chmod +x gameap-daemon
+
+    if _check_systemd; then
+        echo "Downloading systemd configuration..."
+        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/systemd-service.tar.gz" \
+        -o systemd-service.tar.gz > /dev/null 2>&1; then
+            echo "Unable to download systemd configuration" >> /dev/stderr
+            exit 1
+        fi
+
+        echo "Unpacking systemd configuration..."
+        if ! tar -xvf systemd-service.tar.gz; then
+            echo "Unable to unpack systemd configuration" >> /dev/stderr
+            exit 1
+        fi
+    else
+        echo "Downloading initd configuration..."
+        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/initrd-script-debian.tar.gz" \
+          -o initrd-script-debian.tar.gz > /dev/null 2>&1; then
+            echo "Unable to download initrd scripts configuration" >> /dev/stderr
+            exit 1
+        fi
+
+        echo "Unpacking initd configuration..."
+        if ! tar -xvf initrd-script-debian.tar.gz; then
+            echo "Unable to unpack initrd scripts configuration" >> /dev/stderr
+            exit 1
+        fi
+    fi
+
+    echo "Downloading gameap-daemon configuration..."
+    if ! curl -qL "https://raw.githubusercontent.com/gameap/daemon/master/config/gameap-daemon.cfg" \
+      -o gameap-daemon.cfg > /dev/null 2>&1; then
+        echo "Unable to download gameap-daemon configuration" >> /dev/stderr
+        exit 1
+    fi
+
+    echo "Downloading gameap-daemon runner configuration..."
+    if ! curl -qL "https://raw.githubusercontent.com/gameap/scripts/master/process-manager/tmux/runner.sh" \
+      -o runner.sh > /dev/null 2>&1; then
+        echo "Unable to download gameap-daemon configuration" >> /dev/stderr
+        exit 1
+    fi
+
+    echo "Copying gameap-daemon files..."
+    mkdir -p /etc/gameap-daemon
+
+    cp gameap-daemon /usr/bin/gameap-daemon
+    cp gameap-daemon.cfg /etc/gameap-daemon/gameap-daemon.cfg
+
+    cp runner.sh /srv/gameap/runner.sh
+    chmod +x /srv/gameap/runner.sh
+
+    if _check_systemd; then
+        echo "Copying gameap-daemon systemd configuration..."
+        cp gameap-daemon.service /etc/systemd/system/gameap-daemon.service
+        if ! systemctl daemon-reload; then
+            echo "Unable to daemon-reload" >> /dev/stderr
+            exit 1
+        fi
+    else
+        echo "Copying gameap-daemon initd configuration..."
+        cp ./default/gameap-daemon /etc/default/gameap-daemon
+        cp ./init.d/gameap-daemon /etc/init.d/gameap-daemon
+
+        echo "DAEMON=\"/usr/bin/gameap-daemon\"" >> /etc/default/gameap-daemon
+    fi
+
+    install_packages tmux screen
+}
+
 gpg_check ()
 {
     echo
@@ -165,7 +275,7 @@ gpg_check ()
         echo "Detected gpg..."
     else
         echo "Installing gnupg for GPG verification..."
-        yum install -y gnupg
+        install_packages gnupg
 
         if [[ "$?" -ne "0" ]]; then
             echo "Unable to install GPG! Your base system has a problem; please check your default OS's package repositories because GPG should work." >> /dev/stderr
@@ -184,7 +294,7 @@ curl_check ()
         echo "Detected curl..."
     else
         echo "Installing curl..."
-        yum install -q -y curl
+        install_packages curl
         if [[ "$?" -ne "0" ]]; then
             echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work." >> /dev/stderr
             echo "Repository installation aborted." >> /dev/stderr
@@ -273,17 +383,35 @@ generate_certs ()
 
 get_ds_data ()
 {
-    hosts=(ifconfig.co ifconfig.me ipecho.net/plain icanhazip.com)
-
+    hosts=(ifconfig.me ipecho.net/plain icanhazip.com ifconfig.co)
+    ds_public_ip="127.0.0.1"
     for host in ${hosts[*]}; do
-        ds_public_ip=$(curl -qL ${host}) &> /dev/null
+        result=$(curl -qL ${host}) &> /dev/null
 
-        if [[ -n "$ds_public_ip" ]]; then
-            break
+        if [[ "$?" -eq "0" ]]; then
+            if is_ipv4 "${result}" || is_ipv6 "${result}"; then
+                ds_public_ip=${result}
+                break;
+            fi
         fi
     done
 
-    ds_location=$(curl ifconfig.co/country) &> /dev/null
+    hosts=(ifconfig.co/country ipinfo.io/country ifconfig.es/country)
+    ds_location="Unknown"
+    for host in ${hosts[*]}; do
+        result=$(curl -qL ${host}) &> /dev/null
+
+        if [[ "$?" -eq "0" ]]; then
+            if (( ${#result} < 32 )); then
+                ds_location=${result}
+                break;
+            fi
+        fi
+    done
+
+    if [[ -n $ds_public_ip ]]; then
+        ds_ip_list+=("$ds_public_ip")
+    fi
 
     hostnames=$(hostname -I)
 
@@ -296,12 +424,44 @@ get_ds_data ()
             continue
         fi
 
-        ds_ip_list+=($ip)
+        ds_ip_list+=("$ip")
     done
 }
 
-function version { 
-    echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; 
+version ()
+{
+    echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }';
+}
+
+is_ipv4 ()
+{
+    if [[ $1 =~ ^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$ ]]; then
+        # IPv4
+        return 0
+    fi
+
+    return 1
+}
+
+is_ipv6 ()
+{
+    if [[ $1 =~ ^([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}$ ]]; then
+        # IPv6
+        return 0
+    fi
+
+    return 1
+}
+
+_groupadd ()
+{
+    group=$1
+
+    if command -v groupadd > /dev/null; then
+        groupadd ${group}
+    elif command -v /usr/sbin/groupadd > /dev/null; then
+        /usr/sbin/groupadd ${group}
+    fi
 }
 
 main ()
@@ -315,9 +475,6 @@ main ()
     curl_check
     gpg_check
 
-    curl -o "/etc/yum.repos.d/gameap.repo" "http://packages.gameap.ru/centos/gameap-centos${dist}.repo"
-    update_packages_list
-    
     work_dir="/srv/gameap"
 
     if [[ ! -s $work_dir ]]; then
@@ -325,7 +482,7 @@ main ()
     fi
 
     if [[ -z "$(getent group gameap)" ]]; then
-        groupadd "gameap"
+        _groupadd "gameap"
 
         if [[ "$?" -ne "0" ]]; then
             echo "Unable to add group" >> /dev/stderr
@@ -359,19 +516,19 @@ main ()
         exit 1
     fi
 
-    install_packages gameap-daemon openssl unzip xz
+    install_packages openssl unzip xz
     generate_certs
 
+    install_gameap_daemon
+
     if [[ -n "${CREATE_TOKEN}" ]]; then
-        declare -a ds_ip_list
         get_ds_data
 
         echo
         echo "Creating dedicated server on panel..."
         echo
-    
+
         declare -a curl_fields
-        curl_fields+=("-F ip[]=${ds_public_ip} ")
 
         if [[ -z "${ds_ip_list:-}" ]]; then
             gdaemon_host=$ds_public_ip
@@ -385,31 +542,43 @@ main ()
             if [[ "${#ds_ip_list[@]}" -gt 1 ]]; then
                 for ip in ${ds_ip_list[*]}; do
                     # IPv4 is a priority. Check for IPv4.
-                    if [[ ${ip} =~ ^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$ ]]; then
+                    if is_ipv4 ${ip}; then
                         gdaemon_host="${ip}"
                         break
                     fi
                 done
             fi
         fi
-        
+
         # OpenVZ compatible
-        if [[ "$(version $(uname -r))" -le "$(version "2.6.32")" ]]; then
-            echo 
+        if [[ "$(version "$(uname -r)")" -le "$(version 2.6.32)" ]]; then
+            echo
             echo "Old kernel detected..."
             echo "Using screen package instead gameap-starter..."
-            echo 
-            
+            echo
+
+            if [[ "${os}" == "ubuntu" ]]; then
+                # Update libstdc++6 on Ubuntu Xenial OpenVZ
+                install_packages software-properties-common
+                add-apt-repository -y ppa:ubuntu-toolchain-r/test
+                update_packages_list
+
+                install_packages libstdc++6
+            fi
+
             install_packages screen
             curl -o $work_dir/server.sh  https://raw.githubusercontent.com/et-nik/gameap-legacy/v1.2-stable/bin/Linux/server.sh
             chmod +x $work_dir/server.sh
 
-            curl_fields+=("-F script_start=./server.sh -t start -d {dir} -n {uuid} -u {user} -c \"{command}\" ")
-            curl_fields+=("-F script_stop=./server.sh -t stop -d {dir} -n {uuid} -u {user} ")
-            curl_fields+=("-F script_restart=./server.sh -t restart -d {dir} -n {uuid} -u {user} -c \"{command}\" ")
-            curl_fields+=("-F script_status=./server.sh -t status -d {dir} -n {uuid} -u {user} ")
-            curl_fields+=("-F script_get_console=./server.sh -t get_console -d {dir} -n {uuid} -u {user} ")
-            curl_fields+=("-F script_send_command=./server.sh -t send_command -d {dir} -n {uuid} -u {user} -c \"{command}\" ")
+            curl_fields+=("-F script_start={node_work_path}/server.sh -t start -d {dir} -n {uuid} -u {user} -c \"{command}\" ")
+            curl_fields+=("-F script_stop={node_work_path}/server.sh -t stop -d {dir} -n {uuid} -u {user} ")
+            curl_fields+=("-F script_restart={node_work_path}/server.sh -t restart -d {dir} -n {uuid} -u {user} -c \"{command}\" ")
+            curl_fields+=("-F script_status={node_work_path}/server.sh -t status -d {dir} -n {uuid} -u {user} ")
+            curl_fields+=("-F script_get_console={node_work_path}/server.sh -t get_console -d {dir} -n {uuid} -u {user} ")
+            curl_fields+=("-F script_send_command={node_work_path}/server.sh -t send_command -d {dir} -n {uuid} -u {user} -c \"{command}\" ")
+        else
+            curl_fields+=("-F script_get_console={node_work_path}/runner.sh get_console -d {dir} -n {uuid} -u {user} ")
+            curl_fields+=("-F script_send_command={node_work_path}/runner.sh send_command -d {dir} -n {uuid} -u {user} -c \"{command}\"")
         fi
 
         result=$(curl -qL \
@@ -422,9 +591,13 @@ main ()
           -F "gdaemon_host=${gdaemon_host}" \
           -F "gdaemon_port=31717" \
           -F "gdaemon_server_cert=@/etc/gameap-daemon/certs/server.csr" \
-          ${PANEL_HOST}/gdaemon/create/${CREATE_TOKEN}) &> /dev/null
+          "${PANEL_HOST}"/gdaemon/create/"${CREATE_TOKEN}") &> /dev/null
 
         if [[ "$?" -ne "0" ]]; then
+            echo "Curl Result: ${result}"
+            echo "Curl Fields: " "${curl_fields[@]}"
+            echo
+
             echo "Unable to insert dedicated server" >> /dev/stderr
             exit 1
         fi
@@ -452,12 +625,16 @@ main ()
             echo "$serverCertificate" > /etc/gameap-daemon/certs/server.crt
 
             if ! sed -i "s/ds_id.*$/ds_id=${dedicated_server_id}/" /etc/gameap-daemon/gameap-daemon.cfg \
-                || ! sed -i "s/api_host.*$/api_host=${PANEL_HOST##*/}/" /etc/gameap-daemon/gameap-daemon.cfg \
+                || ! sed -i "s/api_host.*$/api_host=${PANEL_HOST//\//\\/}/" /etc/gameap-daemon/gameap-daemon.cfg \
                 || ! sed -i "s/api_key.*$/api_key=${api_key}/" /etc/gameap-daemon/gameap-daemon.cfg \
                 || ! sed -i "s/ca_certificate_file.*$/ca_certificate_file=\/etc\/gameap-daemon\/certs\/ca\.crt/" /etc/gameap-daemon/gameap-daemon.cfg; then
 
                 echo "Unable to edit GDaemon configuration (/etc/gameap-daemon/gameap-daemon.cfg)"
                 exit 1
+            fi
+
+            if is_ipv6 "${gdaemon_host}"; then
+                sed -i "s/listen_ip.*$/listen_ip=::/" /etc/gameap-daemon/gameap-daemon.cfg
             fi
         else
             echo
@@ -474,6 +651,7 @@ main ()
     sed -i "s/certificate_chain_file.*$/certificate_chain_file=\/etc\/gameap-daemon\/certs\/server\.crt/" /etc/gameap-daemon/gameap-daemon.cfg
     sed -i "s/private_key_file.*$/private_key_file=\/etc\/gameap-daemon\/certs\/server\.key/" /etc/gameap-daemon/gameap-daemon.cfg
     sed -i "s/dh_file.*$/dh_file=\/etc\/gameap-daemon\/certs\/dh2048\.pem/" /etc/gameap-daemon/gameap-daemon.cfg
+    sed -i "s/.output_log.*$/output_log=\/var\/log\/gameap-daemon\/output\.log/" /etc/gameap-daemon/gameap-daemon.cfg
 
     if [[ -z "${option_without_starting:-}" ]]; then
         echo "Starting GameAP Daemon..."

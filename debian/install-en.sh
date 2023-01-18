@@ -365,7 +365,7 @@ install_from_github ()
     echo
     echo "Installing NodeJS..."
     curl -sL https://deb.nodesource.com/setup_15.x | bash - &> /dev/null
-    install_packages nodejs
+    install_packages nodejs npm
     echo "done"
 
     if [[ -z "${develop:-}" ]]; then

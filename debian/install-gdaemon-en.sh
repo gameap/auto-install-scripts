@@ -278,7 +278,7 @@ gpg_check ()
         echo "Detected gpg..."
     else
         echo "Installing gnupg for GPG verification..."
-        if ! apt-get install -y gnupg; then
+        if ! install_packages -y gnupg; then
             echo "Unable to install GPG! Your base system has a problem; please check your default OS's package repositories because GPG should work." >> /dev/stderr
             echo "Repository installation aborted." >> /dev/stderr
             exit 1
@@ -295,7 +295,7 @@ curl_check ()
         echo "Detected curl..."
     else
         echo "Installing curl..."
-        if ! apt-get install -q -y curl; then
+        if ! install_packages -q -y curl; then
             echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work." >> /dev/stderr
             echo "Repository installation aborted." >> /dev/stderr
             exit 1
