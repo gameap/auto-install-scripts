@@ -244,31 +244,33 @@ mysql_repo_setup ()
 
     if [[ "${os}" = "debian" ]] && [[ "${dist}" = "stretch" ]]; then
         install_packages dirmngr
-        apt-key adv --keyserver keys.gnupg.net --recv-keys 5072E1F5
+
+        gpg --keyserver keyserver.ubuntu.com --recv-keys 467B942D3A79BD29
+        gpg --export 467B942D3A79BD29 > /etc/apt/trusted.gpg.d/mysql.gpg
 
         if [[ "$?" -ne "0" ]]; then
             echo "Unable to add mysql gpg key. " >> /dev/stderr
             exit 1
         fi
 
-        echo "deb http://repo.mysql.com/apt/debian/ ${dist} main" | tee /etc/apt/sources.list.d/mysql.list
+        echo "deb http://repo.mysql.com/apt/debian/ ${dist} mysql-8.0" | tee /etc/apt/sources.list.d/mysql.list
 
-        gpg --recv-keys 5072E1F5
         update_packages_list
     fi
 
     if [[ "${os}" = "ubuntu" ]] && [[ "${dist}" = "jammy" ]]; then
         install_packages dirmngr
-        apt-key adv --keyserver keys.gnupg.net --recv-keys 5072E1F5
+
+        gpg --keyserver keyserver.ubuntu.com --recv-keys 467B942D3A79BD29
+        gpg --export 467B942D3A79BD29 > /etc/apt/trusted.gpg.d/mysql.gpg
 
         if [[ "$?" -ne "0" ]]; then
             echo "Unable to add mysql gpg key. " >> /dev/stderr
             exit 1
         fi
 
-        echo "deb http://repo.mysql.com/apt/ubuntu/ ${dist} main" | tee /etc/apt/sources.list.d/mysql.list
+        echo "deb http://repo.mysql.com/apt/ubuntu/ ${dist} mysql-8.0" | tee /etc/apt/sources.list.d/mysql.list
 
-        gpg --recv-keys 5072E1F5
         update_packages_list
     fi
 }
