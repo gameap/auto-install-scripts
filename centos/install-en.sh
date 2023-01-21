@@ -214,6 +214,25 @@ curl_check ()
     fi
 }
 
+tar_check ()
+{
+    echo
+    echo "Checking for tar..."
+
+    if command -v tar > /dev/null; then
+        echo "Detected tar..."
+    else
+        echo "Installing tar..."
+        yum install -q -y tar
+
+        if [[ "$?" -ne "0" ]]; then
+            echo "Unable to install tar! Your base system has a problem; please check your default OS's package repositories because tar should work." >> /dev/stderr
+            echo "Repository installation aborted." >> /dev/stderr
+            exit 1
+        fi
+    fi
+}
+
 mysql_repo_setup ()
 {
     echo
@@ -772,6 +791,7 @@ main ()
 
     curl_check
     gpg_check
+    tar_check
 
     if [[ -n "${upgrade:-}" ]]; then
         if [[ -n "${from_github:-}" ]]; then
@@ -782,6 +802,10 @@ main ()
 
         exit 0
     fi
+
+    chcon -R -t httpd_sys_content_t ${gameap_path}
+    chcon -R -t httpd_sys_rw_content_t ${gameap_path}/storage
+    chcon -R -t httpd_sys_rw_content_t ${gameap_path}/modules
 
     install_packages initscripts
 

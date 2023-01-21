@@ -50,9 +50,7 @@ _check_systemd()
     if ! command -v systemctl > /dev/null 2>&1; then
         return 1
     fi
-    if ! systemctl daemon-reload >/dev/null 2>&1; then
-        return 1
-    fi
+
     return 0
 }
 
@@ -371,14 +369,6 @@ generate_certs ()
             exit 1
         fi
     fi
-
-    if [[ ! -f "dh2048.pem" ]]; then
-      openssl dhparam -out dh2048.pem 2048
-      if [[ "$?" -ne "0" ]]; then
-          echo "Unable to generate DH certificate" >> /dev/stderr
-          exit 1
-      fi
-    fi
 }
 
 get_ds_data ()
@@ -650,24 +640,25 @@ main ()
 
     sed -i "s/certificate_chain_file.*$/certificate_chain_file=\/etc\/gameap-daemon\/certs\/server\.crt/" /etc/gameap-daemon/gameap-daemon.cfg
     sed -i "s/private_key_file.*$/private_key_file=\/etc\/gameap-daemon\/certs\/server\.key/" /etc/gameap-daemon/gameap-daemon.cfg
-    sed -i "s/dh_file.*$/dh_file=\/etc\/gameap-daemon\/certs\/dh2048\.pem/" /etc/gameap-daemon/gameap-daemon.cfg
     sed -i "s/.output_log.*$/output_log=\/var\/log\/gameap-daemon\/output\.log/" /etc/gameap-daemon/gameap-daemon.cfg
 
     if [[ -z "${option_without_starting:-}" ]]; then
         echo "Starting GameAP Daemon..."
 
-        if ! /etc/init.d/gameap-daemon start; then
-            echo "Unable to start gameap-daemon service" >> /dev/stderr
-            exit 1
+        if _check_systemd; then
+            systemctl start gameap-daemon
+            systemctl enable gameap-daemon
+            systemctl daemon-reload >/dev/null 2>&1
+        else 
+            if ! /etc/init.d/gameap-daemon start; then
+                echo "Unable to start gameap-daemon service" >> /dev/stderr
+                exit 1
+            fi
         fi
 
         if command -v firewall-cmd > /dev/null; then
             firewall-cmd --zone=public --add-port=31717/tcp --permanent
             firewall-cmd --reload
-        fi
-
-        if command -v systemctl 2>/dev/null; then
-          systemctl enable gameap-daemon
         fi
     fi
 
