@@ -243,7 +243,6 @@ mysql_repo_setup ()
     echo "Setup MySQL repo..."
 
     if [[ "${os}" = "debian" ]] && [[ "${dist}" = "stretch" ]]; then
-
         install_packages dirmngr
         apt-key adv --keyserver keys.gnupg.net --recv-keys 5072E1F5
 
@@ -254,7 +253,22 @@ mysql_repo_setup ()
 
         echo "deb http://repo.mysql.com/apt/debian/ ${dist} main" | tee /etc/apt/sources.list.d/mysql.list
 
-        gpg --recv-keys 5072E1F5y
+        gpg --recv-keys 5072E1F5
+        update_packages_list
+    fi
+
+    if [[ "${os}" = "ubuntu" ]] && [[ "${dist}" = "jammy" ]]; then
+        install_packages dirmngr
+        apt-key adv --keyserver keys.gnupg.net --recv-keys 5072E1F5
+
+        if [[ "$?" -ne "0" ]]; then
+            echo "Unable to add mysql gpg key. " >> /dev/stderr
+            exit 1
+        fi
+
+        echo "deb http://repo.mysql.com/apt/ubuntu/ ${dist} main" | tee /etc/apt/sources.list.d/mysql.list
+
+        gpg --recv-keys 5072E1F5
         update_packages_list
     fi
 }
@@ -863,6 +877,7 @@ main ()
 
     case $db_selected in
         "mysql" )
+            mysql_repo_setup
             mysql_setup
 
             sed -i "s/^\(DB\_CONNECTION\s*=\s*\).*$/\1mysql/" .env
