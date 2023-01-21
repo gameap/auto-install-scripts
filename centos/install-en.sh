@@ -803,10 +803,6 @@ main ()
         exit 0
     fi
 
-    chcon -R -t httpd_sys_content_t ${gameap_path}
-    chcon -R -t httpd_sys_rw_content_t ${gameap_path}/storage
-    chcon -R -t httpd_sys_rw_content_t ${gameap_path}/modules
-
     install_packages initscripts
 
     php_packages_check
@@ -850,6 +846,10 @@ main ()
     else
         install_from_official_repo
     fi
+
+    chcon -R -t httpd_sys_content_t ${gameap_path}
+    chcon -R -t httpd_sys_rw_content_t ${gameap_path}/storage
+    chcon -R -t httpd_sys_rw_content_t ${gameap_path}/modules
 
     case ${db_selected} in
         "mysql" )
