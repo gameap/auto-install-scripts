@@ -31,4 +31,5 @@ jobs:
 
       - name: Tests
         run: |
+          ls -al
           ./run_test.sh
