@@ -1,0 +1,34 @@
+name: Test
+
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+    branches: [ '*' ]
+
+jobs:
+  integration_test:
+    strategy:
+      matrix:
+        distro: [ 'ubuntu:20.04', 'ubuntu:22.04', 'debian:bullseye' ]
+        database: [mysql, sqlite]
+        web-server: [nginx, apache]
+    runs-on: ubuntu-latest
+    container:
+      image:  ${{ matrix.distro }}
+      options: --user root
+      volumes:
+        - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates
+      env:
+          WEB_SERVER: ${{ matrix.web-server }}
+          DATABASE: ${{ matrix.database }}
+    steps:
+      - name: Container preparation
+        run: |
+          apt -y update
+          apt-get install ca-certificates -y
+          update-ca-certificates
+
+      - name: Tests
+        run: |
+          ./run_test.sh
