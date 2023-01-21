@@ -587,8 +587,8 @@ mysql_setup ()
         database_user_password=$(generate_password)
         database_name="gameap"
 
-        echo debconf mysql-server/root_password password $database_root_password | sudo debconf-set-selections
-        echo debconf mysql-server/root_password_again password $database_root_password | sudo debconf-set-selections
+        echo debconf mysql-server/root_password password $database_root_password | debconf-set-selections
+        echo debconf mysql-server/root_password_again password $database_root_password | debconf-set-selections
 
         install_packages "$(get_package_name mysql)"
         unset mysql_package
