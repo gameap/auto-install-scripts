@@ -580,20 +580,24 @@ cron_setup ()
 
 mysql_service_start ()
 {
-    if ! service mysql start; then
-        if ! service mariadb start; then
-            echo "Failed to start mysql/mariadb" >> /dev/stderr
-            exit 1
+    if ! service mysqld start; then
+        if ! service mysql start; then
+            if ! service mariadb start; then
+                echo "Failed to start mysql/mariadb" >> /dev/stderr
+                exit 1
+            fi
         fi
     fi
 }
 
 mysql_service_restart ()
 {
-    if ! service mysql restart; then
-        if ! service mariadb restart; then
-            echo "Failed to restart mysql/mariadb" >> /dev/stderr
-            exit 1
+    if ! service mysqld start; then
+        if ! service mysql restart; then
+            if ! service mariadb restart; then
+                echo "Failed to restart mysql/mariadb" >> /dev/stderr
+                exit 1
+            fi
         fi
     fi
 }
