@@ -88,7 +88,7 @@ install_packages ()
 
     echo
     echo -n "Installing ${packages}... "
-    apt-get install -y $packages &> /dev/null
+    apt-get install -y $packages
 
     if [ "$?" -ne "0" ]; then
         echo "Unable to install ${packages}." >> /dev/stderr
