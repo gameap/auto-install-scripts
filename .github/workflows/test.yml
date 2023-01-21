@@ -29,7 +29,10 @@ jobs:
           apt-get install ca-certificates -y
           update-ca-certificates
 
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Tests
+        shell: bash
         run: |
-          ls -al
           ./run_test.sh
