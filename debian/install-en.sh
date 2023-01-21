@@ -237,44 +237,6 @@ curl_check ()
     fi
 }
 
-mysql_repo_setup ()
-{
-    echo 
-    echo "Setup MySQL repo..."
-
-    if [[ "${os}" = "debian" ]] && [[ "${dist}" = "stretch" ]]; then
-        install_packages dirmngr
-
-        gpg --keyserver keyserver.ubuntu.com --recv-keys 467B942D3A79BD29
-        gpg --export 467B942D3A79BD29 > /etc/apt/trusted.gpg.d/mysql.gpg
-
-        if [[ "$?" -ne "0" ]]; then
-            echo "Unable to add mysql gpg key. " >> /dev/stderr
-            exit 1
-        fi
-
-        echo "deb http://repo.mysql.com/apt/debian/ ${dist} mysql-8.0" | tee /etc/apt/sources.list.d/mysql.list
-
-        update_packages_list
-    fi
-
-    if [[ "${os}" = "ubuntu" ]] && [[ "${dist}" = "jammy" ]]; then
-        install_packages dirmngr
-
-        gpg --keyserver keyserver.ubuntu.com --recv-keys 467B942D3A79BD29
-        gpg --export 467B942D3A79BD29 > /etc/apt/trusted.gpg.d/mysql.gpg
-
-        if [[ "$?" -ne "0" ]]; then
-            echo "Unable to add mysql gpg key. " >> /dev/stderr
-            exit 1
-        fi
-
-        echo "deb http://repo.mysql.com/apt/ubuntu/ ${dist} mysql-8.0" | tee /etc/apt/sources.list.d/mysql.list
-
-        update_packages_list
-    fi
-}
-
 get_package_name ()
 {
     package=$1
@@ -580,24 +542,20 @@ cron_setup ()
 
 mysql_service_start ()
 {
-    if ! service mysqld start; then
-        if ! service mysql start; then
-            if ! service mariadb start; then
-                echo "Failed to start mysql/mariadb" >> /dev/stderr
-                exit 1
-            fi
+    if ! service mysql start; then
+        if ! service mariadb start; then
+            echo "Failed to start mysql/mariadb" >> /dev/stderr
+            exit 1
         fi
     fi
 }
 
 mysql_service_restart ()
 {
-    if ! service mysqld start; then
-        if ! service mysql restart; then
-            if ! service mariadb restart; then
-                echo "Failed to restart mysql/mariadb" >> /dev/stderr
-                exit 1
-            fi
+    if ! service mysql restart; then
+        if ! service mariadb restart; then
+            echo "Failed to restart mysql/mariadb" >> /dev/stderr
+            exit 1
         fi
     fi
 }
@@ -629,27 +587,15 @@ mysql_setup ()
         database_user_password=$(generate_password)
         database_name="gameap"
 
+        echo debconf mysql-server/root_password password $database_root_password | sudo debconf-set-selections
+        echo debconf mysql-server/root_password_again password $database_root_password | sudo debconf-set-selections
+
         install_packages "$(get_package_name mysql)"
         unset mysql_package
 
         mysql_service_start
 
-        mysql -u root -e 'CREATE DATABASE IF NOT EXISTS `gameap`' &> /dev/null
-        if [[ "$?" -ne "0" ]]; then echo "Unable to create database. MySQL seting up failed." >> /dev/stderr; exit 1; fi
-
-        innodb_version=$(mysql -u root --disable-column-names -s -r -e "SELECT @@GLOBAL.innodb_version;")
-
-        if dpkg --compare-versions "${innodb_version}" "lt" "5.7"; then
-            mysql -u root -e "use mysql;\
-                update user set password=PASSWORD(\"${database_root_password}\") where User='root';\
-                flush privileges;" &> /dev/null
-        else
-            mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${database_root_password}';" &> /dev/null
-        fi
-
-        if [[ "$?" -ne "0" ]]; then echo "Unable to set database root password. MySQL seting up failed." >> /dev/stderr; exit 1; fi
-
-        mysql_service_restart
+        mysql -u root -p${database_root_password} -e 'CREATE DATABASE IF NOT EXISTS `gameap`' &> /dev/null
 
         mysql -u root -p${database_root_password} -e "USE mysql;\
             CREATE USER '${database_user_name}'@'%' IDENTIFIED BY '${database_user_password}';\
@@ -883,7 +829,6 @@ main ()
 
     case $db_selected in
         "mysql" )
-            mysql_repo_setup
             mysql_setup
 
             sed -i "s/^\(DB\_CONNECTION\s*=\s*\).*$/\1mysql/" .env
