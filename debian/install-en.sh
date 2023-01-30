@@ -562,10 +562,57 @@ cron_setup ()
     rm gameap_cron
 }
 
+_check_systemd()
+{
+    if ! command -v systemctl > /dev/null 2>&1; then
+        return 1
+    fi
+
+    if ! systemctl daemon-reload >/dev/null 2>&1; then
+        return 1
+    fi
+
+    return 0
+}
+
+_service_start ()
+{
+    local service_name=$1
+
+    if _check_systemd; then
+        if ! systemctl start $service_name; then
+            return 1
+        fi
+    else
+        if ! service $service_name start; then
+            return 1
+        fi
+    fi
+
+    return 0
+}
+
+_service_restart ()
+{
+    local service_name=$1
+
+    if _check_systemd; then
+        if ! systemctl restart $service_name; then
+            return 1
+        fi
+    else
+        if ! service $service_name restart; then
+            return 1
+        fi
+    fi
+
+    return 0
+}
+
 mysql_service_start ()
 {
-    if ! service mysql start; then
-        if ! service mariadb start; then
+    if ! _service_start mysql; then
+        if ! _service_start mariadb; then
             echo "Failed to start mysql/mariadb" >> /dev/stderr
             exit 1
         fi
@@ -574,8 +621,8 @@ mysql_service_start ()
 
 mysql_service_restart ()
 {
-    if ! service mysql restart; then
-        if ! service mariadb restart; then
+    if ! _service_restart mysql; then
+        if ! _service_restart mariadb; then
             echo "Failed to restart mysql/mariadb" >> /dev/stderr
             exit 1
         fi
@@ -692,8 +739,8 @@ nginx_setup ()
     fastcgi_pass=unix:/var/run/php/php${php_version}-fpm.sock
     sed -i "s/^\(\s*fastcgi_pass\s*\).*$/\1${fastcgi_pass//\//\\/}\;/" ${nginx_gameap_conf_path}
 
-    service nginx start
-    service php${php_version}-fpm start
+    _service_start nginx
+    _service_start php${php_version}-fpm
 }
 
 apache_setup ()
@@ -724,7 +771,7 @@ apache_setup ()
     sed -i "s/^\(\s*[\<{1}]Directory\s*\).*$/\1${gameap_public_path//\//\\/}>/" /etc/apache2/sites-available/gameap.conf
 
     a2enmod rewrite
-    service apache2 start
+    _service_start apache2
 }
 
 ask_user ()
