@@ -66,6 +66,21 @@ show_help ()
     echo "GameAP web auto installator"
 }
 
+_detect_source_repository()
+{
+  source_repository=""
+  local repositories=("https://packages.hz1.gameap.io" "https://packages.gameap.ru")
+
+  for repository in "${repositories[@]}"; do
+    if curl -s -o /dev/null --connect-timeout 5 --max-time 10 -I -w "%{http_code}" "${repository}" | grep -q "200"; then
+      source_repository=${repository}
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 update_packages_list ()
 {
     echo
@@ -437,7 +452,7 @@ download_unpack_from_repo ()
     echo
     echo "Downloading GameAP archive..."
 
-    curl -SfL http://packages.gameap.ru/gameap/latest \
+    curl -SfL "${source_repository}/gameap/latest" \
         --output gameap.tar.gz &> /dev/null
     
     if [[ "$?" -ne "0" ]]; then
@@ -857,6 +872,11 @@ main ()
 {
     detect_os
 
+    if ! _detect_source_repository; then
+        echo "Unable to detect source repository" >> /dev/stderr
+        exit 1
+    fi
+
     ask_user
 
     update_packages_list
@@ -875,10 +895,6 @@ main ()
     fi
 
     install_packages software-properties-common apt-transport-https
-
-    # add_gpg_key "http://packages.gameap.ru/gameap-rep.gpg.key"
-    # echo "deb http://packages.gameap.ru/debian/ ${dist} main" > /etc/apt/sources.list.d/gameap.list
-    # update_packages_list
 
     php_packages_check
 

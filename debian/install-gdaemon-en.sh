@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -u
 shopt -s dotglob
@@ -43,6 +43,21 @@ _check_env_variables()
 
         PANEL_HOST=${panelHost}
     fi
+}
+
+_detect_source_repository()
+{
+  source_repository=""
+  local repositories=("https://packages.hz1.gameap.io" "https://packages.gameap.ru")
+
+  for repository in "${repositories[@]}"; do
+    if curl -s -o /dev/null --connect-timeout 5 --max-time 10 -I -w "%{http_code}" "${repository}" | grep -q "200"; then
+      source_repository=${repository}
+      return 0
+    fi
+  done
+
+  return 1
 }
 
 _check_systemd()
@@ -187,7 +202,7 @@ install_gameap_daemon ()
     cd "$(mktemp -d)" || (echo "failed to make temp directory"; exit)
 
     echo "Downloading gameap-daemon binaries..."
-    if ! curl -qL "https://packages.gameap.ru/gameap-daemon/download-release?os=linux&arch=$(arch)" \
+    if ! curl -qL "${source_repository}/gameap-daemon/download-release?os=linux&arch=$(arch)" \
       -o gameap-daemon.tar.gz > /dev/null 2>&1; then
         echo "Unable to download gameap-daemon" >> /dev/stderr
         exit 1
@@ -203,7 +218,7 @@ install_gameap_daemon ()
 
     if _check_systemd; then
         echo "Downloading systemd configuration..."
-        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/systemd-service.tar.gz" \
+        if ! curl -qL "${source_repository}/gameap-daemon/systemd-service.tar.gz" \
         -o systemd-service.tar.gz > /dev/null 2>&1; then
             echo "Unable to download systemd configuration" >> /dev/stderr
             exit 1
@@ -216,7 +231,7 @@ install_gameap_daemon ()
         fi
     else
         echo "Downloading initd configuration..."
-        if ! curl -qL "https://packages.gameap.ru/gameap-daemon/initrd-script-debian.tar.gz" \
+        if ! curl -qL "${source_repository}/gameap-daemon/initrd-script-debian.tar.gz" \
           -o initrd-script-debian.tar.gz > /dev/null 2>&1; then
             echo "Unable to download initrd scripts configuration" >> /dev/stderr
             exit 1
@@ -475,12 +490,17 @@ main ()
 
     detect_os
 
+    if ! _detect_source_repository; then
+        echo "Unable to detect source repository" >> /dev/stderr
+        exit 1
+    fi
+
     update_packages_list
 
     curl_check
     gpg_check
 
-    add_gpg_key "http://packages.gameap.ru/gameap-rep.gpg.key"
+    add_gpg_key "${source_repository}/gameap-rep.gpg.key"
     update_packages_list
     
     work_dir="/srv/gameap"
