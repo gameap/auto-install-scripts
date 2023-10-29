@@ -103,7 +103,7 @@ install_packages ()
 
     echo
     echo -n "Installing ${packages}... "
-    apt-get install -y $packages &> /dev/null
+    apt-get install -y $packages
 
     if [ "$?" -ne "0" ]; then
         echo "Unable to install ${packages}." >> /dev/stderr
@@ -249,28 +249,6 @@ curl_check ()
         echo "Repository installation aborted." >> /dev/stderr
         exit 1
         fi
-    fi
-}
-
-mysql_repo_setup ()
-{
-    echo 
-    echo "Setup MySQL repo..."
-
-    if [[ "${os}" = "debian" ]] && [[ "${dist}" = "stretch" ]]; then
-
-        install_packages dirmngr
-        apt-key adv --keyserver keys.gnupg.net --recv-keys 5072E1F5
-
-        if [[ "$?" -ne "0" ]]; then
-            echo "Unable to add mysql gpg key. " >> /dev/stderr
-            exit 1
-        fi
-
-        echo "deb http://repo.mysql.com/apt/debian/ ${dist} main" | tee /etc/apt/sources.list.d/mysql.list
-
-        gpg --recv-keys 5072E1F5y
-        update_packages_list
     fi
 }
 
@@ -671,27 +649,15 @@ mysql_setup ()
         database_user_password=$(generate_password)
         database_name="gameap"
 
+        echo debconf mysql-server/root_password password $database_root_password | debconf-set-selections
+        echo debconf mysql-server/root_password_again password $database_root_password | debconf-set-selections
+
         install_packages "$(get_package_name mysql)"
         unset mysql_package
 
         mysql_service_start
 
-        mysql -u root -e 'CREATE DATABASE IF NOT EXISTS `gameap`' &> /dev/null
-        if [[ "$?" -ne "0" ]]; then echo "Unable to create database. MySQL seting up failed." >> /dev/stderr; exit 1; fi
-
-        innodb_version=$(mysql -u root --disable-column-names -s -r -e "SELECT @@GLOBAL.innodb_version;")
-
-        if dpkg --compare-versions "${innodb_version}" "lt" "5.7"; then
-            mysql -u root -e "use mysql;\
-                update user set password=PASSWORD(\"${database_root_password}\") where User='root';\
-                flush privileges;" &> /dev/null
-        else
-            mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${database_root_password}';" &> /dev/null
-        fi
-
-        if [[ "$?" -ne "0" ]]; then echo "Unable to set database root password. MySQL seting up failed." >> /dev/stderr; exit 1; fi
-
-        mysql_service_restart
+        mysql -u root -p${database_root_password} -e 'CREATE DATABASE IF NOT EXISTS `gameap`' &> /dev/null
 
         mysql -u root -p${database_root_password} -e "USE mysql;\
             CREATE USER '${database_user_name}'@'%' IDENTIFIED BY '${database_user_password}';\

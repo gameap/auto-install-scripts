@@ -94,9 +94,9 @@ detect_os
 echo "127.0.0.1 test.gameap" > /etc/hosts
 
 if [[ ${os} == "debian" ]] || [[ ${os} == "ubuntu" ]]; then
-    ./debian/install-en.sh --github --path=/var/www/gameap --host=test.gameap --web-server=${WEB_SERVER} --database=${DATABASE}
+    ./debian/install-en.sh --path=/var/www/gameap --host=test.gameap --web-server=${WEB_SERVER} --database=${DATABASE}
 elif [[ ${os} == "centos" ]]; then
-    ./centos/install-en.sh --github --path=/var/www/gameap --host=test.gameap --web-server=${WEB_SERVER} --database=${DATABASE}
+    ./centos/install-en.sh --path=/var/www/gameap --host=test.gameap --web-server=${WEB_SERVER} --database=${DATABASE}
 else
     echo "Unknown OS" >> /dev/stderr
     exit 1

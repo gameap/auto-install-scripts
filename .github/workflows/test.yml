@@ -26,9 +26,14 @@ jobs:
       - name: Container preparation
         run: |
           apt -y update
+          apt dist-upgrade -y
           apt-get install ca-certificates -y
           update-ca-certificates
 
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Tests
+        shell: bash
         run: |
           ./run_test.sh
