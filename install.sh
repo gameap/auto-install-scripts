@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 language=$(echo $LANGUAGE | cut -d_ -f1)
 
 detect_os ()
@@ -31,26 +33,19 @@ detect_os ()
         elif [[ -n "${VERSION_ID:-}" ]]; then
             dist=${VERSION_ID:-}
         fi
-    elif [[ -f /etc/system-release-cpe ]]; then
-        os=$(cut --delimiter=":" -f 3 /etc/system-release-cpe)
-        dist=$(cut --delimiter=":" -f 5 /etc/system-release-cpe)
-    elif [[ -n "$(command -v lsb_release 2>/dev/null)" ]]; then
+
+    elif [[ -n "$(command -v lsb_release > /dev/null 2>&1)" ]]; then
         dist=$(lsb_release -c | cut -f2)
         os=$(lsb_release -i | cut -f2 | awk '{ print tolower($1) }')
+    fi
 
-    elif [[ -e /etc/debian_version ]]; then
+    if [[ -z "$dist" ]] && [[ -e /etc/debian_version ]]; then
         os=$(cat /etc/issue | head -1 | awk '{ print tolower($1) }')
         if grep -q '/' /etc/debian_version; then
             dist=$(cut --delimiter='/' -f1 /etc/debian_version)
         else
             dist=$(cut --delimiter='.' -f1 /etc/debian_version)
         fi
-    else
-        unknown_os
-    fi
-
-    if [[ -z "$dist" ]]; then
-        unknown_os
     fi
 
     if [[ "${os}" = "debian" ]]; then
@@ -61,7 +56,12 @@ detect_os ()
             9* ) dist="stretch" ;;
             10* ) dist="buster" ;;
             11* ) dist="bullseye" ;;
+            12* ) dist="bookworm" ;;
         esac
+    fi
+
+    if [[ -z "$dist" ]]; then
+        unknown_os
     fi
 
     # remove whitespace from OS and dist name
@@ -92,10 +92,10 @@ curl_check ()
     if [ "${os}" = "debian" ]; then
         apt-get -y update &> /dev/null
         apt-get -q -y install curl &> /dev/null
-    elif [ "${os}" = "ubuntu" ]; then 
+    elif [ "${os}" = "ubuntu" ]; then
         apt-get -y update &> /dev/null
         apt-get install -q -y curl &> /dev/null
-    elif [ "${os}" = "centos" ]; then 
+    elif [ "${os}" = "centos" ]; then
         yum -q -y update &> /dev/null
         yum -q -y install curl &> /dev/null
     fi
@@ -108,32 +108,62 @@ curl_check ()
   fi
 }
 
-detect_os
+cpuarch=""
 
-if [ "${os}" = "debian" ]; then 
-    script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/debian/install-en.sh"
-elif [ "${os}" = "ubuntu" ]; then 
-    script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/debian/install-en.sh"
-elif [ "${os}" = "centos" ]; then 
-    script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/centos/install-en.sh"
-else
-    echo "Your operating system not supported"
-    exit 1
-fi
+detect_arch ()
+{
+    local architecture
+    architecture=$(uname -m)
+    if [[ "$architecture" == x86_64* ]]; then
+        cpuarch="amd64"
+    elif [[ "$architecture" == i*86 ]]; then
+        cpuarch="386"
+    elif  [[ "$architecture" == arm64 ]]; then
+        cpuarch="arm64"
+    elif  [[ "$architecture" == arm ]]; then
+        cpuarch="arm"
+    fi
+
+    if [[ -z "$cpuarch" ]]; then
+        unknown_arch
+    fi
+}
+
+
+unknown_arch ()
+{
+    echo "Unfortunately, your architecture are not supported by this script."
+    exit 2
+}
+
+detect_os
+detect_arch
+
+script="https://github.com/gameap/gameapctl/releases/download/v0.2.1/gameapctl-v0.2.1-linux-${cpuarch}.tar.gz"
 
 echo "Preparation for installation..."
 curl_check
 
-echo
-echo
-echo "Downloading installator for your operating system..."
-curl -sL $script --output /tmp/gameap-install.sh &> /dev/null
-chmod +x /tmp/gameap-install.sh
+if ! command -v /usr/local/bin/gameapctl > /dev/null; then
+  echo
+  echo
+  echo "Downloading gameapctl for your operating system..."
+  curl -sL $script --output /tmp/gameapctl-v0.2.1-linux-${cpuarch}.tar.gz &> /dev/null
+
+  echo
+  echo
+  echo "Unpacking archive..."
+  tar -xvf /tmp/gameapctl-v0.2.1-linux-${cpuarch}.tar.gz -C /usr/local/bin
+
+  chmod +x /usr/local/bin/gameapctl
+fi
 
 echo
 echo
-echo "Running..."
+echo "gameapctl updating..."
+/usr/local/bin/gameapctl self-update
+
 echo
 echo
-bash /tmp/gameap-install.sh $@
-rm /tmp/gameap-install.sh
+echo "Running installation..."
+bash -c "/usr/local/bin/gameapctl panel install $*"
