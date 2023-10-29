@@ -490,15 +490,15 @@ main ()
 
     detect_os
 
-    if ! _detect_source_repository; then
-        echo "Unable to detect source repository" >> /dev/stderr
-        exit 1
-    fi
-
     update_packages_list
 
     curl_check
     gpg_check
+
+    if ! _detect_source_repository; then
+        echo "Unable to detect source repository" >> /dev/stderr
+        exit 1
+    fi
 
     add_gpg_key "${source_repository}/gameap-rep.gpg.key"
     update_packages_list
