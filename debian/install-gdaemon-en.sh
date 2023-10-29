@@ -269,7 +269,7 @@ _main ()
     echo
     echo
     echo "Running installation..."
-    gameap daemon install
+    gameapctl daemon install
 }
 
 _parse_options "$@"
