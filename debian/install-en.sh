@@ -838,17 +838,17 @@ main ()
 {
     detect_os
 
-    if ! _detect_source_repository; then
-        echo "Unable to detect source repository" >> /dev/stderr
-        exit 1
-    fi
-
     ask_user
 
     update_packages_list
 
     curl_check
     gpg_check
+
+    if ! _detect_source_repository; then
+        echo "Unable to detect source repository" >> /dev/stderr
+        exit 1
+    fi
 
     if [[ -n "${upgrade:-}" ]]; then
         if [[ -n "${from_github:-}" ]]; then
