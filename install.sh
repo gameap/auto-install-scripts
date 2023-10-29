@@ -144,7 +144,7 @@ script="https://github.com/gameap/gameapctl/releases/download/v0.2.1/gameapctl-v
 echo "Preparation for installation..."
 curl_check
 
-if ! command -v /usr/local/bin/gameapctl > /dev/null; then
+if ! command -v gameapctl > /dev/null; then
   echo
   echo
   echo "Downloading gameapctl for your operating system..."
@@ -158,12 +158,16 @@ if ! command -v /usr/local/bin/gameapctl > /dev/null; then
   chmod +x /usr/local/bin/gameapctl
 fi
 
+if ! command -v gameapctl > /dev/null; then
+  PATH=$PATH:/usr/local/bin
+fi
+
 echo
 echo
 echo "gameapctl updating..."
-/usr/local/bin/gameapctl self-update
+gameapctl self-update
 
 echo
 echo
 echo "Running installation..."
-bash -c "/usr/local/bin/gameapctl panel install $*"
+bash -c "gameapctl panel install $*"
