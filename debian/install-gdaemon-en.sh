@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+set -e
 set -u
 shopt -s dotglob
 
@@ -235,7 +236,7 @@ _main ()
     curl_check
     gpg_check
 
-    detect_arch
+    _detect_arch
 
     script="https://github.com/gameap/gameapctl/releases/download/v0.2.1/gameapctl-v0.2.1-linux-${cpuarch}.tar.gz"
 
