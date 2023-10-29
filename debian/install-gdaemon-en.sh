@@ -272,5 +272,5 @@ _main ()
     gameap daemon install
 }
 
-parse_options "$@"
+_parse_options "$@"
 _main
