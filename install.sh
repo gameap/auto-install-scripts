@@ -139,7 +139,8 @@ unknown_arch ()
 detect_os
 detect_arch
 
-script="https://github.com/gameap/gameapctl/releases/download/v0.2.1/gameapctl-v0.2.1-linux-${cpuarch}.tar.gz"
+gameapctl_version="0.4.3"
+gameapctl_url="https://github.com/gameap/gameapctl/releases/download/v${gameapctl_version}/gameapctl-v${gameapctl_version}-linux-${cpuarch}.tar.gz"
 
 echo "Preparation for installation..."
 curl_check
@@ -148,12 +149,12 @@ if ! command -v gameapctl > /dev/null; then
   echo
   echo
   echo "Downloading gameapctl for your operating system..."
-  curl -sL $script --output /tmp/gameapctl-v0.2.1-linux-${cpuarch}.tar.gz &> /dev/null
+  curl -sL ${gameapctl_url} --output /tmp/gameapctl-v${gameapctl_version}-linux-${cpuarch}.tar.gz &> /dev/null
 
   echo
   echo
   echo "Unpacking archive..."
-  tar -xvf /tmp/gameapctl-v0.2.1-linux-${cpuarch}.tar.gz -C /usr/local/bin
+  tar -xvf /tmp/gameapctl-v${gameapctl_version}-linux-${cpuarch}.tar.gz -C /usr/local/bin
 
   chmod +x /usr/local/bin/gameapctl
 fi
