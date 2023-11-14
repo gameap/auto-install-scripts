@@ -94,9 +94,9 @@ detect_os
 echo "127.0.0.1 test.gameap" > /etc/hosts
 
 if [[ ${os} == "debian" ]] || [[ ${os} == "ubuntu" ]]; then
-    ./debian/install-en.sh --path=/var/www/gameap --host=test.gameap --web-server=${WEB_SERVER} --database=${DATABASE}
+    ./install.sh --path=/var/www/gameap --host=test.gameap --web-server=${WEB_SERVER} --database=${DATABASE}
 elif [[ ${os} == "centos" ]]; then
-    ./centos/install-en.sh --path=/var/www/gameap --host=test.gameap --web-server=${WEB_SERVER} --database=${DATABASE}
+    ./install.sh --path=/var/www/gameap --host=test.gameap --web-server=${WEB_SERVER} --database=${DATABASE}
 else
     echo "Unknown OS" >> /dev/stderr
     exit 1
@@ -110,14 +110,7 @@ curl -sL -w "HTTP CODE: %{http_code}\\n" "http://test.gameap/login" -o /dev/null
 echo
 echo "Checking GameAP Daemon installation"
 
-if [[ ${os} == "debian" ]] || [[ ${os} == "ubuntu" ]]; then
-    daemon_install_command="./debian/install-gdaemon-en.sh"
-elif [[ ${os} == "centos" ]]; then
-    daemon_install_command="./centos/install-gdaemon-en.sh"
-else
-    echo "Unknown os"
-    exit 1
-fi
+daemon_install_command="./install-gdaemon.sh"
 
 echo "Illuminate\Support\Facades\Cache::put('gdaemonAutoCreateToken', 'test_auto_setup_token', 99999);" | /var/www/gameap/artisan tinker || true
 
