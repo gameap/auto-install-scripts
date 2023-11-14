@@ -91,7 +91,7 @@ _check_env_variables()
             exit 1
         fi
 
-        CREATE_TOKEN=${createToken}
+        export CREATE_TOKEN=${createToken}
     fi
 
     if [[ -z ${PANEL_HOST:-} ]]; then
@@ -100,7 +100,7 @@ _check_env_variables()
             exit 1
         fi
 
-        PANEL_HOST=${panelHost}
+        export PANEL_HOST=${panelHost}
     fi
 }
 
