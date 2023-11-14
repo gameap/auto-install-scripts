@@ -13,6 +13,7 @@ jobs:
         distro: [ 'ubuntu:20.04', 'ubuntu:22.04', 'debian:bullseye', 'debian:bookworm' ]
         database: [mysql, sqlite]
         web-server: [nginx, apache]
+        experimental: [false]
         include:
           - distro: 'ubuntu:23.04'
             database: 'mysql'
