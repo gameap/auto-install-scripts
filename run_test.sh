@@ -6,7 +6,7 @@ shopt -s dotglob
 
 [[ "${DEBUG:-}" == 'true' ]] && set -x
 
-PATH=${PATH:-}:/bin:/usr/bin:/usr/local/bin
+export PATH=${PATH:-}:/bin:/usr/bin:/usr/local/bin
 
 detect_os ()
 {
