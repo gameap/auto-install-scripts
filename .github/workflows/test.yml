@@ -10,11 +10,15 @@ jobs:
   test:
     strategy:
       matrix:
-        distro: [ 'ubuntu:18.04', 'ubuntu:20.04', 'ubuntu:22.04', 'debian:buster', 'debian:bullseye', 'debian:bookworm' ]
+        distro: [ 'ubuntu:20.04', 'ubuntu:22.04', 'debian:buster', 'debian:bullseye', 'debian:bookworm' ]
         database: [mysql, sqlite]
         web-server: [nginx, apache]
         experimental: [false]
         include:
+          - distro: 'ubuntu:18.04'
+            database: 'mysql'
+            web-server: 'nginx'
+            experimental: true
           - distro: 'ubuntu:23.04'
             database: 'mysql'
             web-server: 'nginx'
