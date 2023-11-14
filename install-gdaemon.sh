@@ -4,7 +4,7 @@ language=$(echo $LANGUAGE | cut -d_ -f1)
 
 [[ "${DEBUG:-}" == 'true' ]] && set -x
 
-detect_os ()
+_detect_os ()
 {
     os=""
     dist=""
@@ -76,13 +76,62 @@ detect_os ()
     echo "Detected operating system as $os/$dist."
 }
 
-unknown_os ()
+
+_unknown_os ()
 {
     echo "Unfortunately, your operating system distribution and version are not supported by this script."
     exit 2
 }
 
-curl_check ()
+_check_env_variables()
+{
+    if [[ -z ${CREATE_TOKEN:-} ]]; then
+        if [[ -z ${createToken:-} ]]; then
+            echo "Empty create token" >> /dev/stderr
+            exit 1
+        fi
+
+        CREATE_TOKEN=${createToken}
+    fi
+
+    if [[ -z ${PANEL_HOST:-} ]]; then
+        if [[ -z ${panelHost:-} ]]; then
+            echo "Empty panel host" >> /dev/stderr
+            exit 1
+        fi
+
+        PANEL_HOST=${panelHost}
+    fi
+}
+
+cpuarch=""
+
+_detect_arch ()
+{
+    local architecture
+    architecture=$(uname -m)
+    if [[ "$architecture" == x86_64* ]]; then
+        cpuarch="amd64"
+    elif [[ "$architecture" == i*86 ]]; then
+        cpuarch="386"
+    elif  [[ "$architecture" == arm64 ]]; then
+        cpuarch="arm64"
+    elif  [[ "$architecture" == arm ]]; then
+        cpuarch="arm"
+    fi
+
+    if [[ -z "$cpuarch" ]]; then
+        _unknown_arch
+    fi
+}
+
+_unknown_arch ()
+{
+    echo "Unfortunately, your architecture are not supported by this script."
+    exit 2
+}
+
+_curl_check ()
 {
   echo "Checking for curl..."
   if command -v curl > /dev/null; then
@@ -109,32 +158,51 @@ curl_check ()
   fi
 }
 
-detect_os
+_main ()
+{
+  _check_env_variables
 
-if [[ "${os}" == "debian" ]] \
-    || [[ "${os}" == "ubuntu" ]]; then
+  _detect_os
 
-    script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/debian/install-gdaemon-en.sh"
-elif [[ "${os}" == "centos" ]]; then
-    script="https://raw.githubusercontent.com/gameap/auto-install-scripts/master/centos/install-gdaemon-en.sh"
-else
-    echo "Your operating system not supported" >> /dev/stderr
-    exit 1
-fi
+  echo "Preparation for installation..."
+  _curl_check
 
-echo "Preparation for installation..."
-curl_check
+  _detect_arch
 
-echo
-echo
-echo "Downloading installator for your operating system..."
-curl -sL $script --output /tmp/gameap-daemon-install.sh &> /dev/null
-chmod +x /tmp/gameap-daemon-install.sh
+  echo
+  echo
+  echo "Downloading installator for your operating system..."
 
-echo
-echo
-echo "Running..."
-echo
-echo
-bash /tmp/gameap-daemon-install.sh $@
-rm /tmp/gameap-daemon-install.sh
+  gameapctl_version="0.4.3"
+  gameapctl_url="https://github.com/gameap/gameapctl/releases/download/v${gameapctl_version}/gameapctl-v${gameapctl_version}-linux-${cpuarch}.tar.gz"
+
+  if ! command -v gameapctl > /dev/null; then
+    echo
+    echo
+    echo "Downloading gameapctl for your operating system..."
+    curl -sL ${gameapctl_url} --output /tmp/gameapctl-v${gameapctl_version}-linux-${cpuarch}.tar.gz &> /dev/null
+
+    echo
+    echo
+    echo "Unpacking archive..."
+    tar -xvf /tmp/gameapctl-v${gameapctl_version}-linux-${cpuarch}.tar.gz -C /usr/local/bin
+
+    chmod +x /usr/local/bin/gameapctl
+  fi
+
+  if ! command -v gameapctl > /dev/null; then
+    PATH=$PATH:/usr/local/bin
+  fi
+
+  echo
+  echo
+  echo "gameapctl updating..."
+  gameapctl self-update
+
+  echo
+  echo
+  echo "Running installation..."
+  gameapctl daemon install
+}
+
+_main
