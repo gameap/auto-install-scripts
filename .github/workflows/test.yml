@@ -7,10 +7,10 @@ on:
     branches: [ '*' ]
 
 jobs:
-  integration_test:
+  test:
     strategy:
       matrix:
-        distro: [ 'ubuntu:20.04', 'ubuntu:22.04', 'debian:bullseye', 'debian:bookworm' ]
+        distro: [ 'ubuntu:18.04', 'ubuntu:20.04', 'ubuntu:22.04', 'debian:buster', 'debian:bullseye', 'debian:bookworm' ]
         database: [mysql, sqlite]
         web-server: [nginx, apache]
         experimental: [false]
