@@ -2,8 +2,6 @@
 
 set -e
 
-language=$(echo $LANGUAGE | cut -d_ -f1)
-
 detect_os ()
 {
     os=""
@@ -110,7 +108,7 @@ curl_check ()
 
 cpuarch=""
 
-detect_arch ()
+_detect_arch ()
 {
     local architecture
     architecture=$(uname -m)
@@ -118,6 +116,8 @@ detect_arch ()
         cpuarch="amd64"
     elif [[ "$architecture" == i*86 ]]; then
         cpuarch="386"
+    elif  [[ "$architecture" == aarch64 ]]; then
+        cpuarch="arm64"
     elif  [[ "$architecture" == arm64 ]]; then
         cpuarch="arm64"
     elif  [[ "$architecture" == arm ]]; then
@@ -125,7 +125,7 @@ detect_arch ()
     fi
 
     if [[ -z "$cpuarch" ]]; then
-        unknown_arch
+        _unknown_arch
     fi
 }
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-language=$(echo $LANGUAGE | cut -d_ -f1)
-
 [[ "${DEBUG:-}" == 'true' ]] && set -x
 
 _detect_os ()
@@ -114,6 +112,8 @@ _detect_arch ()
         cpuarch="amd64"
     elif [[ "$architecture" == i*86 ]]; then
         cpuarch="386"
+    elif  [[ "$architecture" == aarch64 ]]; then
+        cpuarch="arm64"
     elif  [[ "$architecture" == arm64 ]]; then
         cpuarch="arm64"
     elif  [[ "$architecture" == arm ]]; then
