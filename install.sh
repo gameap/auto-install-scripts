@@ -2,7 +2,7 @@
 
 set -e
 
-detect_os ()
+_detect_os ()
 {
     os=""
     dist=""
@@ -59,7 +59,7 @@ detect_os ()
     fi
 
     if [[ -z "$dist" ]]; then
-        unknown_os
+        _unknown_os
     fi
 
     # remove whitespace from OS and dist name
@@ -73,13 +73,13 @@ detect_os ()
     echo "Detected operating system as $os/$dist."
 }
 
-unknown_os ()
+_unknown_os ()
 {
     echo "Unfortunately, your operating system distribution and version are not supported by this script."
     exit 2
 }
 
-curl_check ()
+_curl_check ()
 {
   echo "Checking for curl..."
   if command -v curl > /dev/null; then
@@ -130,20 +130,20 @@ _detect_arch ()
 }
 
 
-unknown_arch ()
+_unknown_arch ()
 {
     echo "Unfortunately, your architecture are not supported by this script."
     exit 2
 }
 
-detect_os
-detect_arch
+_detect_os
+_detect_arch
 
-gameapctl_version="0.4.3"
+gameapctl_version="0.5.0"
 gameapctl_url="https://github.com/gameap/gameapctl/releases/download/v${gameapctl_version}/gameapctl-v${gameapctl_version}-linux-${cpuarch}.tar.gz"
 
 echo "Preparation for installation..."
-curl_check
+_curl_check
 
 if ! command -v gameapctl > /dev/null; then
   echo
