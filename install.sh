@@ -106,6 +106,33 @@ _curl_check ()
   fi
 }
 
+_tar_check ()
+{
+  echo "Checking for tar..."
+  if command -v tar > /dev/null; then
+    echo "Detected tar..."
+  else
+    echo "Installing tar..."
+
+    if [ "${os}" = "debian" ]; then
+        apt-get -y update &> /dev/null
+        apt-get -q -y install tar &> /dev/null
+    elif [ "${os}" = "ubuntu" ]; then
+        apt-get -y update &> /dev/null
+        apt-get install -q -y tar &> /dev/null
+    elif [ "${os}" = "centos" ]; then
+        yum -q -y update &> /dev/null
+        yum -q -y install tar &> /dev/null
+    fi
+
+    if [ "$?" -ne "0" ]; then
+      echo "Unable to install tar! Your base system has a problem; please check your default OS's package repositories because tar should work." >> /dev/stderr
+      echo "Repository installation aborted." >> /dev/stderr
+      exit 1
+    fi
+  fi
+}
+
 cpuarch=""
 
 _detect_arch ()
@@ -139,11 +166,12 @@ _unknown_arch ()
 _detect_os
 _detect_arch
 
-gameapctl_version="0.5.0"
+gameapctl_version="0.6.0"
 gameapctl_url="https://github.com/gameap/gameapctl/releases/download/v${gameapctl_version}/gameapctl-v${gameapctl_version}-linux-${cpuarch}.tar.gz"
 
 echo "Preparation for installation..."
 _curl_check
+_tar_check
 
 if ! command -v gameapctl > /dev/null; then
   echo
